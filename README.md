@@ -9,4 +9,4 @@
 1. Клонируйте репозиторий:
    ```bash
    git clone https://github.com/BDOlegsey/.ResumeAI.git
-   cd resume-agent
+   cd .ResumeAI
