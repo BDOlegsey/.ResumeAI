@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}О нас{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h4 mb-0">О нас</h2>
+            </div>
+            <div class="card-body">
+                <p>
+                    Мы — небольшая команда энтузиастов, создающая инструменты на основе ИИ,
+                    чтобы помочь вам в построении карьеры.
+                </p>
+                <p>
+                    Этот сервис автоматически генерирует качественные резюме на основе ваших данных,
+                    экономя ваше время и повышая шансы на успех.
+                </p>
+                <p class="text-muted">
+                    Сделано с ❤️ и современными LLM-технологиями.
+                </p>
+                <a href="{% url 'index' %}" class="btn btn-outline-primary">Вернуться на главную</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

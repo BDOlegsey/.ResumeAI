@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Как это работает{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h4 mb-0">Как это работает</h2>
+            </div>
+            <div class="card-body">
+                <ol class="fs-5">
+                    <li class="mb-3">Введите список ваших работодателей.</li>
+                    <li class="mb-3">Опишите ключевые достижения (лучше с цифрами).</li>
+                    <li class="mb-3">Нажмите «Создать резюме».</li>
+                    <li>Наш ИИ проанализирует данные и сформирует профессиональное резюме.</li>
+                </ol>
+                <p class="mt-4">
+                    <span class="badge bg-success">Бесплатно</span>
+                    <span class="badge bg-primary">Без регистрации</span>
+                    <span class="badge bg-warning text-dark">В разработке</span>
+                </p>
+                <a href="{% url 'index' %}" class="btn btn-primary mt-3">Попробовать сейчас</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

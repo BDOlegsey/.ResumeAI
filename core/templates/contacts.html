@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h4 mb-0">Контакты</h2>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled fs-5">
+                    <li class="mb-2">
+                        <strong>📧 Email:</strong> support@resumeai.example.com
+                    </li>
+                    <li class="mb-2">
+                        <strong>📞 Телефон:</strong> +7 (XXX) XXX-XX-XX
+                    </li>
+                </ul>
+                <div class="alert alert-warning">
+                    Служба поддержки временно недоступна. Страница находится в разработке.
+                </div>
+                <a href="{% url 'index' %}" class="btn btn-outline-secondary">← Назад</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

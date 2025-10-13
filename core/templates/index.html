@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Создать резюме{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h4 mb-0">Создайте профессиональное резюме за минуту</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label for="employers" class="form-label fw-bold">Желаемая должность</label>
+                        <textarea
+                            class="form-control"
+                            id="employers"
+                            name="employers"
+                            rows="4"
+                            placeholder="Напишите подробно о желаемой должности, выпишите требования работодателя"
+                        >{{ employers }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="achievements" class="form-label fw-bold">Ваши достижения</label>
+                        <textarea
+                            class="form-control"
+                            id="achievements"
+                            name="achievements"
+                            rows="4"
+                            placeholder="Напишите подробно о ваших достижениях, образовании и умениях"
+                        >{{ achievements }}</textarea>
+                        <div class="form-text">
+                            💡 Для лучшего результата опишите достижения конкретно и с цифрами.
+                            Подтверждение документами пока не поддерживается.
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        🚀 Создать резюме
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

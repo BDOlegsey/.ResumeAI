@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Помощь и поддержка{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h4 mb-0">Помощь и поддержка</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5>🛠️ Эта страница находится в разработке</h5>
+                    <p>Скоро здесь появятся:</p>
+                    <ul>
+                        <li>Телефон технической поддержки</li>
+                        <li>Онлайн-чат</li>
+                        <li>Telegram-бот для помощи</li>
+                    </ul>
+                </div>
+                <a href="{% url 'index' %}" class="btn btn-outline-primary">← Вернуться на главную</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
