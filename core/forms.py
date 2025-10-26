@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+from .models import UserProfile
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -29,3 +30,15 @@ class CustomAuthenticationForm(AuthenticationForm):
                 'class': 'form-control',
                 'placeholder': self.fields[field_name].label
             })
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['phone', 'profession', 'default_resume_format']
+        widgets = {
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'profession': forms.TextInput(attrs={'class': 'form-control'}),
+            'default_resume_format': forms.Select(attrs={'class': 'form-control'}),
+        }
+

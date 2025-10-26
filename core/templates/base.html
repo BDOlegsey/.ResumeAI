@@ -44,7 +44,10 @@
                                 👋 {{ user.username }}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">Выйти</a></li>
+                                <li><a class="dropdown-item" href="{% url 'profile' %}">📊 Профиль</a></li>
+                                <li><a class="dropdown-item" href="{% url 'history' %}">📋 История резюме</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}">🚪 Выйти</a></li>
                             </ul>
                         </li>
                     {% else %}

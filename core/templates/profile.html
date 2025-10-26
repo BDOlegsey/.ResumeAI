@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль пользователя{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h4 mb-0">👤 Профиль пользователя</h2>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">📊 Статистика</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span>Всего создано резюме:</span>
+                                    <span class="badge bg-primary">{{ total_requests }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Дата регистрации:</span>
+                                    <span class="text-muted">{{ user.date_joined|date:"d.m.Y" }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">⚙️ Настройки профиля</h6>
+                            </div>
+                            <div class="card-body">
+                                <form method="post">
+                                    {% csrf_token %}
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Имя пользователя</label>
+                                        <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                                        <div class="form-text">Имя пользователя нельзя изменить</div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                                    </div>
+
+                                    {{ form.as_p }}
+
+                                    <button type="submit" class="btn btn-primary w-100">Сохранить настройки</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">📝 Последние резюме</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if recent_requests %}
+                                    <div class="list-group list-group-flush">
+                                        {% for req in recent_requests %}
+                                        <a href="{% url 'resume_detail' req.id %}"
+                                           class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">Резюме от {{ req.created_at|date:"d.m.Y" }}</h6>
+                                                <small>{{ req.created_at|timesince }} назад</small>
+                                            </div>
+                                            <p class="mb-1 text-truncate">{{ req.employers|truncatewords:8 }}</p>
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="text-center mt-3">
+                                        <a href="{% url 'history' %}" class="btn btn-outline-primary btn-sm">
+                                            Вся история
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <p>У вас еще нет созданных резюме</p>
+                                        <a href="{% url 'index' %}" class="btn btn-primary btn-sm">Создать первое резюме</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
