@@ -1,0 +1,33 @@
+# LangGraph and related LangChain components
+langgraph
+langchain-core
+langchain-perplexity # For using Perplexity models via LangChain
+
+# Perplexity API client (if needed directly, though langchain-perplexity should handle it)
+# perplexity-python
+
+# Web scraping and browser automation
+selenium
+
+# Database interaction
+# sqlite3 is part of the Python standard library, no need to install separately
+
+# Document generation
+python-docx
+
+# Environment variable management
+python-dotenv
+
+# Pydantic for data models (LangGraph state uses it)
+pydantic
+
+# Logging (part of standard library, but often managed via dependencies)
+# logging is part of the Python standard library
+
+# Other potential dependencies based on common LangChain usage
+tqdm # Often used by LangChain for progress bars
+requests # Used by many libraries, including LangChain tools
+
+Django
+django-bootstrap5
+Pillow
