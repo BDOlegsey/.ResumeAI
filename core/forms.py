@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, UserImage
+import os
+from PIL import Image
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -13,7 +15,6 @@ class CustomUserCreationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Добавляем Bootstrap классы к полям
         for field_name in self.fields:
             self.fields[field_name].widget.attrs.update({
                 'class': 'form-control',
@@ -24,7 +25,6 @@ class CustomUserCreationForm(UserCreationForm):
 class CustomAuthenticationForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Добавляем Bootstrap классы к полям
         for field_name in self.fields:
             self.fields[field_name].widget.attrs.update({
                 'class': 'form-control',
@@ -33,12 +33,33 @@ class CustomAuthenticationForm(AuthenticationForm):
 
 
 class UserProfileForm(forms.ModelForm):
+    avatar = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={'class': 'form-control'}),
+        label="Аватар профиля"
+    )
+
     class Meta:
         model = UserProfile
-        fields = ['phone', 'profession', 'default_resume_format']
+        fields = ['phone', 'profession', 'avatar', 'default_resume_format']
         widgets = {
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
             'profession': forms.TextInput(attrs={'class': 'form-control'}),
             'default_resume_format': forms.Select(attrs={'class': 'form-control'}),
         }
 
+
+class UserImageForm(forms.ModelForm):
+    class Meta:
+        model = UserImage
+        fields = ['image', 'title']
+        widgets = {
+            'image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Название изображения (опционально)'
+            }),
+        }

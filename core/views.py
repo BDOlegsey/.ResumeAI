@@ -1,15 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, Http404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from django.conf import settings
+from django.db import transaction
 import os
 from datetime import datetime
 
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
-from .models import ResumeRequest, UserProfile
+from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, UserImageForm
+from .models import ResumeRequest, UserProfile, UserImage
+from .utils.docx_generator import create_resume_docx
 
 
 @login_required
@@ -17,6 +19,9 @@ def index(request):
     if request.method == "POST":
         employers = request.POST.get("employers", "").strip()
         achievements = request.POST.get("achievements", "").strip()
+        selected_images = request.POST.getlist("selected_images")
+
+        print(f"DEBUG: Selected images: {selected_images}")  # ОТЛАДКА
 
         if not employers and not achievements:
             messages.error(request, "Пожалуйста, заполните хотя бы одно поле.")
@@ -25,46 +30,134 @@ def index(request):
                 "achievements": achievements
             })
 
-        # Сохраняем в сессию
         request.session["employers"] = employers
         request.session["achievements"] = achievements
 
-        # === 🚀 ИМИТАЦИЯ РАБОТЫ LLM-АГЕНТА ===
-        # Здесь будет вызов вашего агента
         resume_text = generate_resume_placeholder(employers, achievements, request.user.username)
-
-        # Сохраняем результат в сессию
         request.session["generated_resume"] = resume_text
 
-        # Сохраняем запрос в базу данных
-        resume_request = ResumeRequest.objects.create(
-            user=request.user,
-            employers=employers,
-            achievements=achievements,
-            resume_content=resume_text
-        )
+        with transaction.atomic():
+            # Создаем запрос резюме
+            resume_request = ResumeRequest.objects.create(
+                user=request.user,
+                employers=employers,
+                achievements=achievements,
+                resume_content=resume_text
+            )
 
-        # Сохраняем ID запроса в сессии для последующего использования
+            # ПРИКРЕПЛЯЕМ ВЫБРАННЫЕ ИЗОБРАЖЕНИЯ
+            if selected_images:
+                try:
+                    # Преобразуем ID в целые числа
+                    image_ids = [int(img_id) for img_id in selected_images if img_id.isdigit()]
+                    print(f"DEBUG: Image IDs: {image_ids}")  # ОТЛАДКА
+
+                    # Получаем изображения пользователя
+                    images = UserImage.objects.filter(id__in=image_ids, user=request.user)
+                    print(f"DEBUG: Found images: {images.count()}")  # ОТЛАДКА
+
+                    # Добавляем связь ManyToMany
+                    resume_request.images.add(*images)
+                    messages.info(request, f"Прикреплено {len(images)} изображений к резюме.")
+
+                    # Сохраняем изменения
+                    resume_request.save()
+
+                except Exception as e:
+                    print(f"DEBUG: Error attaching images: {e}")  # ОТЛАДКА
+                    messages.warning(request, f"Ошибка при прикреплении изображений: {str(e)}")
+
+            # Генерируем DOCX
+            user_profile = UserProfile.objects.filter(user=request.user).first()
+            docx_path = create_resume_docx(resume_request, user_profile)
+
+            if docx_path:
+                messages.success(request, "Резюме успешно создано и сохранено в формате DOCX!")
+            else:
+                messages.warning(request, "Резюме создано, но не удалось сохранить DOCX файл.")
+
         request.session["last_resume_request_id"] = resume_request.id
-
-        messages.success(request, "Резюме успешно создано!")
         return redirect("result")
 
-    # GET-запрос: показываем форму с сохранёнными данными (если есть)
     employers = request.session.get("employers", "")
     achievements = request.session.get("achievements", "")
+    user_images = UserImage.objects.filter(user=request.user).order_by('-uploaded_at')
+
     return render(request, "index.html", {
         "employers": employers,
-        "achievements": achievements
+        "achievements": achievements,
+        "user_images": user_images,
     })
 
 
 @login_required
-def result(request):
-    # Получаем сгенерированное резюме из сессии
-    resume = request.session.get("generated_resume", "Резюме не найдено. Вернитесь на главную и создайте его.")
+def upload_images(request):
+    """Загрузка изображений - упрощенная версия"""
+    if request.method == 'POST' and request.FILES:
+        images = request.FILES.getlist('images')
 
-    # Получаем последний запрос для отображения информации
+        if not images:
+            messages.error(request, 'Пожалуйста, выберите файлы для загрузки.')
+            return redirect('index')
+
+        uploaded_count = 0
+        errors = []
+
+        for image_file in images:
+            try:
+                # Проверка размера
+                if image_file.size > 5 * 1024 * 1024:
+                    errors.append(f"Файл {image_file.name} слишком большой (макс. 5MB)")
+                    continue
+
+                # Проверка типа
+                ext = os.path.splitext(image_file.name)[1].lower().lstrip('.')
+                if ext not in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
+                    errors.append(f"Файл {image_file.name} должен быть изображением (JPG, PNG, GIF, BMP)")
+                    continue
+
+                # Проверка что это действительно изображение
+                try:
+                    from PIL import Image
+                    img = Image.open(image_file)
+                    img.verify()
+                    image_file.seek(0)  # Reset file pointer
+                except Exception:
+                    errors.append(f"Файл {image_file.name} не является корректным изображением")
+                    continue
+
+                # Сохраняем изображение
+                UserImage.objects.create(
+                    user=request.user,
+                    image=image_file,
+                    title=os.path.splitext(image_file.name)[0]
+                )
+                uploaded_count += 1
+
+            except Exception as e:
+                errors.append(f"Ошибка при загрузке {image_file.name}: {str(e)}")
+
+        if uploaded_count > 0:
+            messages.success(request, f'Успешно загружено {uploaded_count} изображений.')
+
+        for error in errors:
+            messages.error(request, error)
+
+    return redirect('index')
+
+
+@login_required
+def delete_image(request, image_id):
+    image = get_object_or_404(UserImage, id=image_id, user=request.user)
+    image_title = image.title or "Изображение"
+    image.delete()
+    messages.success(request, f'Изображение "{image_title}" удалено.')
+    return redirect('index')
+
+
+@login_required
+def result(request):
+    resume = request.session.get("generated_resume", "Резюме не найдено. Вернитесь на главную и создайте его.")
     last_request_id = request.session.get("last_resume_request_id")
     last_request = None
     if last_request_id:
@@ -81,9 +174,7 @@ def result(request):
 
 @login_required
 def history(request):
-    """Страница истории запросов"""
     resume_requests = ResumeRequest.objects.filter(user=request.user).order_by('-created_at')
-
     return render(request, "history.html", {
         "resume_requests": resume_requests
     })
@@ -91,9 +182,7 @@ def history(request):
 
 @login_required
 def resume_detail(request, request_id):
-    """Детальная страница конкретного резюме"""
     resume_request = get_object_or_404(ResumeRequest, id=request_id, user=request.user)
-
     return render(request, "resume_detail.html", {
         "resume_request": resume_request
     })
@@ -101,26 +190,41 @@ def resume_detail(request, request_id):
 
 @login_required
 def download_resume(request, request_id):
-    """Скачивание резюме в формате DOCX"""
     resume_request = get_object_or_404(ResumeRequest, id=request_id, user=request.user)
 
-    # Здесь будет вызов вашего агента для генерации DOCX
-    # Пока возвращаем текстовый файл
-    from django.http import HttpResponse
-    response = HttpResponse(resume_request.resume_content, content_type='text/plain')
-    response[
-        'Content-Disposition'] = f'attachment; filename="resume_{request_id}_{datetime.now().strftime("%Y%m%d")}.txt"'
+    if resume_request.resume_file:
+        response = FileResponse(
+            resume_request.resume_file.open(),
+            as_attachment=True,
+            filename=f"resume_{resume_request.user.username}_{resume_request.created_at.strftime('%Y%m%d')}.docx"
+        )
+        return response
+    else:
+        response = HttpResponse(resume_request.resume_content, content_type='text/plain')
+        response[
+            'Content-Disposition'] = f'attachment; filename="resume_{request_id}_{datetime.now().strftime("%Y%m%d")}.txt"'
+        return response
 
-    return response
+
+@login_required
+def view_resume_file(request, request_id):
+    resume_request = get_object_or_404(ResumeRequest, id=request_id, user=request.user)
+
+    if not resume_request.resume_file:
+        raise Http404("Файл резюме не найден")
+
+    return FileResponse(
+        resume_request.resume_file.open(),
+        filename=os.path.basename(resume_request.resume_file.name)
+    )
 
 
 @login_required
 def profile(request):
-    """Страница профиля пользователя"""
     user_profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
-        form = UserProfileForm(request.POST, instance=user_profile)
+        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
         if form.is_valid():
             form.save()
             messages.success(request, 'Профиль успешно обновлен!')
@@ -128,7 +232,6 @@ def profile(request):
     else:
         form = UserProfileForm(instance=user_profile)
 
-    # Статистика пользователя
     total_requests = ResumeRequest.objects.filter(user=request.user).count()
     recent_requests = ResumeRequest.objects.filter(user=request.user).order_by('-created_at')[:5]
 
@@ -140,7 +243,6 @@ def profile(request):
 
 
 def generate_resume_placeholder(employers, achievements, username):
-    """Заглушка для генерации резюме (замените на вызов вашего агента)"""
     return (
         f"📄 ПРОФЕССИОНАЛЬНОЕ РЕЗЮМЕ\n"
         f"Сгенерировано: {timezone.now().strftime('%d.%m.%Y %H:%M')}\n"
@@ -164,16 +266,12 @@ def generate_resume_placeholder(employers, achievements, username):
     )
 
 
-# Существующие функции аутентификации
 def register_view(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-
-            # Создаем профиль пользователя
             UserProfile.objects.create(user=user)
-
             login(request, user)
             messages.success(request, f'Добро пожаловать, {user.username}! Вы успешно зарегистрировались.')
             return redirect('index')

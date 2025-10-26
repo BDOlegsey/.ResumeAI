@@ -10,7 +10,7 @@
                 <h2 class="h4 mb-0">📄 Резюме от {{ resume_request.created_at|date:"d.m.Y H:i" }}</h2>
                 <div class="btn-group">
                     <a href="{% url 'download_resume' resume_request.id %}" class="btn btn-success btn-sm">
-                        💾 Скачать
+                        💾 Скачать DOCX
                     </a>
                     <a href="{% url 'history' %}" class="btn btn-outline-secondary btn-sm">← Назад</a>
                 </div>
@@ -39,6 +39,37 @@
                     </div>
                 </div>
 
+                <!-- БЛОК С ПРИКРЕПЛЕННЫМИ ИЗОБРАЖЕНИЯМИ -->
+                {% if resume_request.images.all %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">🖼️ Прикрепленные изображения</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for image in resume_request.images.all %}
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card">
+                                            <img src="{{ image.image.url }}"
+                                                 class="card-img-top"
+                                                 alt="{{ image.title }}"
+                                                 style="height: 150px; object-fit: cover;">
+                                            <div class="card-body">
+                                                <p class="card-text small">{{ image.title|default:"Без названия" }}</p>
+                                                <small class="text-muted">{{ image.uploaded_at|date:"d.m.Y H:i" }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="card border-primary">
                     <div class="card-header bg-primary text-white">
                         <h6 class="mb-0">🎯 Сгенерированное резюме</h6>
@@ -53,6 +84,9 @@
                 <div class="mt-3 text-muted small">
                     <p><strong>Создано:</strong> {{ resume_request.created_at|date:"d.m.Y H:i" }}</p>
                     <p><strong>Обновлено:</strong> {{ resume_request.updated_at|date:"d.m.Y H:i" }}</p>
+                    {% if resume_request.images.all %}
+                    <p><strong>Изображений прикреплено:</strong> {{ resume_request.images.count }}</p>
+                    {% endif %}
                 </div>
             </div>
         </div>

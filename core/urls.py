@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
@@ -19,4 +21,13 @@ urlpatterns = [
     path("profile/", views.profile, name="profile"),
     path("resume/<int:request_id>/", views.resume_detail, name="resume_detail"),
     path("resume/<int:request_id>/download/", views.download_resume, name="download_resume"),
+    path("resume/<int:request_id>/view/", views.view_resume_file, name="view_resume_file"),
+
+    # Изображения
+    path("upload-images/", views.upload_images, name="upload_images"),
+    path("delete-image/<int:image_id>/", views.delete_image, name="delete_image"),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
