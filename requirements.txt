@@ -1,0 +1,9 @@
+django
+langgraph
+langchain-core
+langchain-perplexity
+python-docx
+python-dotenv
+pydantic
+tqdm
+requests

@@ -1,13 +1,13 @@
+# database.py
 import sqlite3
+import logging
+from typing import Optional
 from config import DB_PATH
 from models import SearchResults
-import logging
-from typing import Optional # Добавлен импорт Optional
 
 logger = logging.getLogger(__name__)
 
 def init_db():
-    """Initializes the SQLite database and creates the table if it doesn't exist."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
@@ -24,10 +24,12 @@ def init_db():
     logger.info(f"Database initialized at {DB_PATH}")
 
 def get_employer_info(employer_name: str) -> Optional[SearchResults]:
-    """Retrieves employer information from the database."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT employer_name, company_info, job_specific_info FROM employer_info WHERE employer_name = ?', (employer_name,))
+    cursor.execute(
+        'SELECT employer_name, company_info, job_specific_info FROM employer_info WHERE employer_name = ?',
+        (employer_name,)
+    )
     row = cursor.fetchone()
     conn.close()
     if row:
@@ -35,13 +37,16 @@ def get_employer_info(employer_name: str) -> Optional[SearchResults]:
     return None
 
 def store_employer_info(search_results: SearchResults):
-    """Stores or updates employer information in the database."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     try:
         cursor.execute('''
-            INSERT OR REPLACE INTO employer_info (employer_name, company_info, job_specific_info)
+            INSERT INTO employer_info (employer_name, company_info, job_specific_info)
             VALUES (?, ?, ?)
+            ON CONFLICT(employer_name) DO UPDATE SET
+                company_info=excluded.company_info,
+                job_specific_info=excluded.job_specific_info,
+                last_updated=CURRENT_TIMESTAMP
         ''', (search_results.employer_name, search_results.company_info, search_results.job_specific_info))
         conn.commit()
         logger.info(f"Stored/Updated info for {search_results.employer_name} in database.")
