@@ -14,14 +14,11 @@
                 {% if resume_requests %}
                     <div class="table-responsive">
                         <table class="table table-hover">
-
-
-                        <!-- В templates/history.html добавляем колонку с изображениями -->
                         <thead>
                             <tr>
                                 <th>Дата создания</th>
-                                <th>Работодатели</th>
-                                <th>Достижения</th>
+                                <th>Должность</th>
+                                <th>Компании</th>
                                 <th>Изображения</th>
                                 <th>Действия</th>
                             </tr>
@@ -31,15 +28,12 @@
                             <tr>
                                 <td>{{ request.created_at|date:"d.m.Y H:i" }}</td>
                                 <td>
-                                    <div class="text-truncate" style="max-width: 200px;"
-                                         title="{{ request.employers }}">
-                                        {{ request.employers|truncatewords:10 }}
-                                    </div>
+                                    <strong>{{ request.job_title|truncatechars:30 }}</strong>
                                 </td>
                                 <td>
                                     <div class="text-truncate" style="max-width: 200px;"
-                                         title="{{ request.achievements }}">
-                                        {{ request.achievements|truncatewords:10 }}
+                                         title="{{ request.employers }}">
+                                        {{ request.employers|truncatewords:5 }}
                                     </div>
                                 </td>
                                 <td>
@@ -60,8 +54,6 @@
                             </tr>
                             {% endfor %}
                         </tbody>
-
-
                         </table>
                     </div>
 

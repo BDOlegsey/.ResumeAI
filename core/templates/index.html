@@ -27,7 +27,6 @@
                         <h5 class="mb-0">🖼️ Прикрепить изображения</h5>
                     </div>
                     <div class="card-body">
-                        <!-- В index.html обновите форму загрузки -->
                         <form method="post" action="{% url 'upload_images' %}" enctype="multipart/form-data" class="mb-3">
                             {% csrf_token %}
                             <div class="row">
@@ -68,7 +67,8 @@
                                                        type="checkbox"
                                                        name="selected_images"
                                                        value="{{ image.id }}"
-                                                       id="image_{{ image.id }}">
+                                                       id="image_{{ image.id }}"
+                                                       form="resume-form">
                                                 <label class="form-check-label small" for="image_{{ image.id }}">
                                                     {{ image.title|default:"Без названия"|truncatechars:20 }}
                                                 </label>
@@ -93,34 +93,52 @@
                 </div>
 
                 <!-- Основная форма резюме -->
-                <form method="post">
+                <form method="post" id="resume-form">
                     {% csrf_token %}
 
                     <div class="mb-4">
-                        <label for="employers" class="form-label fw-bold">Желаемая должность</label>
+                        <label for="job_title" class="form-label fw-bold">Желаемая должность</label>
+                        <input
+                            type="text"
+                            class="form-control"
+                            id="job_title"
+                            name="job_title"
+                            placeholder="Например: Senior Python Developer"
+                            value="{{ job_title }}"
+                            {% if not user.is_authenticated %}disabled{% endif %}
+                            required>
+                        <div class="form-text">
+                            💡 Укажите конкретную должность, на которую претендуете
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="employers" class="form-label fw-bold">Целевые компании-работодатели</label>
                         <textarea
                             class="form-control"
                             id="employers"
                             name="employers"
-                            rows="4"
-                            placeholder="Напишите подробно о желаемой должности, выпишите требования работодателя"
+                            rows="3"
+                            placeholder="Укажите компании через запятую или с новой строки, например:&#10;Yandex&#10;Google&#10;Microsoft"
                             {% if not user.is_authenticated %}disabled{% endif %}
-                        >{{ employers }}</textarea>
+                            required>{{ employers }}</textarea>
+                        <div class="form-text">
+                            💡 ИИ найдёт требования каждой компании и адаптирует резюме
+                        </div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="achievements" class="form-label fw-bold">Ваши достижения</label>
+                        <label for="achievements" class="form-label fw-bold">Ваши достижения и навыки</label>
                         <textarea
                             class="form-control"
                             id="achievements"
                             name="achievements"
-                            rows="4"
-                            placeholder="Напишите подробно о ваших достижениях, образовании и умениях"
+                            rows="6"
+                            placeholder="Опишите подробно:&#10;• Опыт работы и проекты&#10;• Технические навыки&#10;• Достижения с цифрами&#10;• Образование"
                             {% if not user.is_authenticated %}disabled{% endif %}
-                        >{{ achievements }}</textarea>
+                            required>{{ achievements }}</textarea>
                         <div class="form-text">
                             💡 Для лучшего результата опишите достижения конкретно и с цифрами.
-                            Подтверждение документами пока не поддерживается.
                         </div>
                     </div>
 
