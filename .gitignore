@@ -10,7 +10,7 @@ ENV/
 
 # Django
 *.log
-db.sqlite3
+core/resumeai/db.sqlite3
 media/
 staticfiles/
 
@@ -23,3 +23,7 @@ staticfiles/
 # Env files
 .env
 .env.local
+db.sqlite3
+employer_info.db
+.gitignore
+

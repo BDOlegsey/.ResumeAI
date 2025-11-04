@@ -2,12 +2,15 @@ from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
 
+
 def resume_file_path(instance, filename):
     date_str = datetime.now().strftime('%Y/%m/%d')
     return f'resumes/user_{instance.user.id}/{date_str}/{filename}'
 
+
 def user_image_path(instance, filename):
     return f'users/user_{instance.user.id}/images/{filename}'
+
 
 class UserImage(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='images')
@@ -21,6 +24,7 @@ class UserImage(models.Model):
     def __str__(self):
         return f"Изображение {self.user.username} - {self.title or 'Без названия'}"
 
+
 class ResumeRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='resume_requests')
     job_title = models.CharField(max_length=200, verbose_name="Должность", blank=True)
@@ -30,7 +34,10 @@ class ResumeRequest(models.Model):
     achievements = models.TextField(verbose_name="Достижения")
     images = models.ManyToManyField('UserImage', blank=True, verbose_name="Изображения")
     resume_content = models.TextField(verbose_name="Сгенерированное резюме")
-    resume_file = models.FileField(upload_to=resume_file_path, null=True, blank=True, verbose_name="Файл (DOCX)")
+
+    # Файлы
+    resume_file = models.FileField(upload_to=resume_file_path, null=True, blank=True, verbose_name="Архив резюме (ZIP)")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -39,6 +46,7 @@ class ResumeRequest(models.Model):
 
     def __str__(self):
         return f"Резюме {self.user.username} от {self.created_at.strftime('%d.%m.%Y')}"
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')

@@ -11,22 +11,20 @@ from datetime import datetime
 from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm
 from .models import ResumeRequest, UserProfile, UserImage
 
-from resumeai.models import UserData
-from resumeai.pipeline import generate_resume_docx
+from .resumeai.models import UserData
+from .resumeai.pipeline import generate_resume_docx
 
 
 @login_required
 def index(request):
     if request.method == "POST":
-        # Извлекаем ВСЕ поля из формы
         job_title = request.POST.get("job_title", "").strip()
         employers = request.POST.get("employers", "").strip()
         achievements = request.POST.get("achievements", "").strip()
         selected_images = request.POST.getlist("selected_images")
 
-        # Валидация
         if not job_title or not employers or not achievements:
-            messages.error(request, "Заполните все обязательные поля: должность, компании и достижения.")
+            messages.error(request, "Заполните все обязательные поля.")
             return render(request, "index.html", {
                 "job_title": job_title,
                 "employers": employers,
@@ -34,7 +32,7 @@ def index(request):
                 "user_images": UserImage.objects.filter(user=request.user).order_by('-uploaded_at'),
             })
 
-        # Парсим список компаний (через запятую или новую строку)
+        # Парсим список компаний
         employers_list = []
         for line in employers.replace(",", "\n").splitlines():
             line = line.strip()
@@ -42,22 +40,21 @@ def index(request):
                 employers_list.append(line)
 
         if not employers_list:
-            messages.error(request, "Укажите хотя бы одну компанию-работодателя.")
+            messages.error(request, "Укажите хотя бы одну компанию.")
             return redirect("index")
 
-        # Создаём UserData для мультиагентной системы
         user_data = UserData(
             employers=employers_list,
             job_title=job_title,
-            experience="",  # Можно добавить отдельное поле позже
-            skills="",  # Можно добавить отдельное поле позже
+            experience="",
+            skills="",
             achievements=achievements,
             attachments=[]
         )
 
-        # Генерация резюме через ИИ
+        # Генерация резюме
         try:
-            resume_text, docx_bytes = generate_resume_docx(user_data, max_iterations=3)
+            resume_text, zip_bytes, _ = generate_resume_docx(user_data, max_iterations=3)
         except Exception as e:
             messages.error(request, f"Ошибка генерации резюме: {e}")
             return redirect("index")
@@ -72,21 +69,19 @@ def index(request):
                 resume_content=resume_text
             )
 
-            # Прикрепляем выбранные изображения
             if selected_images:
                 image_ids = [int(img_id) for img_id in selected_images if str(img_id).isdigit()]
                 images = UserImage.objects.filter(id__in=image_ids, user=request.user)
                 resume_request.images.add(*list(images))
 
-            # Сохраняем DOCX файл
-            filename = f"resume_{request.user.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
-            resume_request.resume_file.save(filename, ContentFile(docx_bytes), save=True)
+            # Сохраняем ZIP-архив
+            filename = f"resumes_{request.user.username}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
+            resume_request.resume_file.save(filename, ContentFile(zip_bytes), save=True)
 
         request.session["last_resume_request_id"] = resume_request.id
-        messages.success(request, "Резюме успешно создано!")
+        messages.success(request, f"Создано {len(employers_list)} резюме!")
         return redirect("result")
 
-    # GET запрос
     user_images = UserImage.objects.filter(user=request.user).order_by(
         '-uploaded_at') if request.user.is_authenticated else []
     return render(request, "index.html", {"user_images": user_images})
@@ -97,35 +92,22 @@ def upload_images(request):
     if request.method == 'POST' and request.FILES:
         images = request.FILES.getlist('images')
         uploaded_count = 0
-        errors = []
 
         for image_file in images:
             try:
-                # Проверка размера
                 if image_file.size > 5 * 1024 * 1024:
-                    errors.append(f"Файл {image_file.name} слишком большой (макс. 5MB)")
                     continue
-
-                # Проверка расширения
-                ext = os.path.splitext(image_file.name)[1].lower().lstrip('.')
-                if ext not in ['jpg', 'jpeg', 'png', 'gif', 'bmp']:
-                    errors.append(f"Файл {image_file.name} должен быть изображением")
-                    continue
-
-                # Сохранение
                 UserImage.objects.create(
                     user=request.user,
                     image=image_file,
                     title=os.path.splitext(image_file.name)[0]
                 )
                 uploaded_count += 1
-            except Exception as e:
-                errors.append(f"Ошибка при загрузке {image_file.name}: {str(e)}")
+            except:
+                pass
 
         if uploaded_count > 0:
             messages.success(request, f'Загружено {uploaded_count} изображений.')
-        for error in errors:
-            messages.error(request, error)
 
     return redirect('index')
 
@@ -167,13 +149,18 @@ def resume_detail(request, request_id):
 @login_required
 def download_resume(request, request_id):
     resume_request = get_object_or_404(ResumeRequest, id=request_id, user=request.user)
+
     if resume_request.resume_file:
+        # Скачиваем ZIP-архив
         return FileResponse(
-            resume_request.resume_file.open(),
+            resume_request.resume_file.open('rb'),
             as_attachment=True,
-            filename=f"resume_{resume_request.user.username}_{resume_request.created_at.strftime('%Y%m%d')}.docx"
+            filename=f"resumes_{resume_request.user.username}_{resume_request.created_at.strftime('%Y%m%d')}.zip",
+            content_type='application/zip'
         )
-    response = HttpResponse(resume_request.resume_content, content_type='text/plain')
+
+    # Fallback: текстовый файл
+    response = HttpResponse(resume_request.resume_content, content_type='text/plain; charset=utf-8')
     response['Content-Disposition'] = f'attachment; filename="resume_{request_id}.txt"'
     return response
 
@@ -183,7 +170,7 @@ def view_resume_file(request, request_id):
     resume_request = get_object_or_404(ResumeRequest, id=request_id, user=request.user)
     if not resume_request.resume_file:
         raise Http404("Файл не найден")
-    return FileResponse(resume_request.resume_file.open())
+    return FileResponse(resume_request.resume_file.open('rb'), content_type='application/zip')
 
 
 @login_required

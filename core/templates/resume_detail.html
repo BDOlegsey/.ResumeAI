@@ -9,16 +9,23 @@
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <div>
                     <h2 class="h4 mb-0">📄 Резюме от {{ resume_request.created_at|date:"d.m.Y H:i" }}</h2>
-                    <small class="text-muted">{{ resume_request.job_title }}</small>
+                    <small class="text-muted">
+                        {{ resume_request.job_title }} •
+                        {{ resume_request.employers|linebreaksbr|wordcount }} компани{% if resume_request.employers|linebreaksbr|wordcount == 1 %}я{% else %}й{% endif %}
+                    </small>
                 </div>
                 <div class="btn-group">
                     <a href="{% url 'download_resume' resume_request.id %}" class="btn btn-success btn-sm">
-                        💾 Скачать DOCX
+                        💾 Скачать все резюме
                     </a>
                     <a href="{% url 'history' %}" class="btn btn-outline-secondary btn-sm">← Назад</a>
                 </div>
             </div>
             <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>📦 Документ содержит:</strong> {{ resume_request.employers|linebreaksbr|wordcount }} персонализированных резюме
+                </div>
+
                 <div class="row mb-4">
                     <div class="col-md-4">
                         <div class="card">
@@ -33,10 +40,14 @@
                     <div class="col-md-8">
                         <div class="card">
                             <div class="card-header">
-                                <h6 class="mb-0">🏢 Целевые компании</h6>
+                                <h6 class="mb-0">🏢 Целевые компании ({{ resume_request.employers|linebreaksbr|wordcount }})</h6>
                             </div>
                             <div class="card-body">
-                                <pre class="mb-0" style="white-space: pre-wrap;">{{ resume_request.employers }}</pre>
+                                <ul class="mb-0">
+                                    {% for line in resume_request.employers.splitlines %}
+                                    <li>{{ line }}</li>
+                                    {% endfor %}
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -55,13 +66,12 @@
                     </div>
                 </div>
 
-                <!-- БЛОК С ПРИКРЕПЛЕННЫМИ ИЗОБРАЖЕНИЯМИ -->
                 {% if resume_request.images.all %}
                 <div class="row mb-4">
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h6 class="mb-0">🖼️ Прикрепленные изображения</h6>
+                                <h6 class="mb-0">🖼️ Прикрепленные изображения ({{ resume_request.images.count }})</h6>
                             </div>
                             <div class="card-body">
                                 <div class="row">
@@ -88,10 +98,10 @@
 
                 <div class="card border-primary">
                     <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0">🎯 Сгенерированное резюме</h6>
+                        <h6 class="mb-0">🎯 Все сгенерированные резюме</h6>
                     </div>
                     <div class="card-body">
-                        <div class="result-box">
+                        <div class="result-box" style="max-height: 600px; overflow-y: auto;">
                             {{ resume_request.resume_content }}
                         </div>
                     </div>
@@ -100,8 +110,9 @@
                 <div class="mt-3 text-muted small">
                     <p><strong>Создано:</strong> {{ resume_request.created_at|date:"d.m.Y H:i" }}</p>
                     <p><strong>Обновлено:</strong> {{ resume_request.updated_at|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Компаний:</strong> {{ resume_request.employers|linebreaksbr|wordcount }}</p>
                     {% if resume_request.images.all %}
-                    <p><strong>Изображений прикреплено:</strong> {{ resume_request.images.count }}</p>
+                    <p><strong>Изображений:</strong> {{ resume_request.images.count }}</p>
                     {% endif %}
                 </div>
             </div>
