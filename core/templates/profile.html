@@ -92,7 +92,6 @@
                     <h5 class="mb-0">⚙️ Редактирование профиля</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Форма редактирования профиля -->
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <div class="row">
@@ -186,12 +185,24 @@
                         {% csrf_token %}
                         <div class="row">
                             <div class="col-md-6">
-                                {{ work_exp_form.company }}
-                                {{ work_exp_form.position }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ work_exp_form.company.label }}</label>
+                                    {{ work_exp_form.company }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{{ work_exp_form.position.label }}</label>
+                                    {{ work_exp_form.position }}
+                                </div>
                             </div>
                             <div class="col-md-3">
-                                {{ work_exp_form.start_date }}
-                                {{ work_exp_form.end_date }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ work_exp_form.start_date.label }}</label>
+                                    {{ work_exp_form.start_date }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{{ work_exp_form.end_date.label }}</label>
+                                    {{ work_exp_form.end_date }}
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-check mt-4">
@@ -202,7 +213,10 @@
                                 </div>
                             </div>
                         </div>
-                        {{ work_exp_form.description }}
+                        <div class="mb-3">
+                            <label class="form-label">{{ work_exp_form.description.label }}</label>
+                            {{ work_exp_form.description }}
+                        </div>
                         <button type="submit" name="work_exp_submit" class="btn btn-success btn-sm mt-2">
                             ➕ Добавить опыт работы
                         </button>
@@ -210,7 +224,6 @@
 
                     <!-- Список опыта работы -->
                     {% if work_experiences %}
-                        <!-- В секции "Опыт работы" -->
                         <div class="list-group">
                             {% for exp in work_experiences %}
                             <div class="list-group-item">
@@ -230,9 +243,11 @@
                                         {% endif %}
                                     </div>
                                     <div class="btn-group btn-group-sm ms-3">
+                                        <!-- КНОПКА РЕДАКТИРОВАНИЯ -->
                                         <a href="{% url 'edit_work_experience' exp.id %}" class="btn btn-outline-primary" title="Редактировать">
                                             ✏️
                                         </a>
+                                        <!-- КНОПКА УДАЛЕНИЯ -->
                                         <a href="{% url 'delete_work_experience' exp.id %}"
                                            class="btn btn-outline-danger"
                                            onclick="return confirm('Удалить этот опыт работы?')"
@@ -262,12 +277,24 @@
                         {% csrf_token %}
                         <div class="row">
                             <div class="col-md-6">
-                                {{ education_form.institution }}
-                                {{ education_form.degree }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ education_form.institution.label }}</label>
+                                    {{ education_form.institution }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{{ education_form.degree.label }}</label>
+                                    {{ education_form.degree }}
+                                </div>
                             </div>
                             <div class="col-md-3">
-                                {{ education_form.start_date }}
-                                {{ education_form.end_date }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ education_form.start_date.label }}</label>
+                                    {{ education_form.start_date }}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">{{ education_form.end_date.label }}</label>
+                                    {{ education_form.end_date }}
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="form-check mt-4">
@@ -278,8 +305,14 @@
                                 </div>
                             </div>
                         </div>
-                        {{ education_form.specialty }}
-                        {{ education_form.description }}
+                        <div class="mb-3">
+                            <label class="form-label">{{ education_form.specialty.label }}</label>
+                            {{ education_form.specialty }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ education_form.description.label }}</label>
+                            {{ education_form.description }}
+                        </div>
                         <button type="submit" name="education_submit" class="btn btn-success btn-sm mt-2">
                             ➕ Добавить образование
                         </button>
@@ -287,7 +320,6 @@
 
                     <!-- Список образования -->
                     {% if educations %}
-                        <!-- В секции "Образование" -->
                         <div class="list-group">
                             {% for edu in educations %}
                             <div class="list-group-item">
@@ -308,9 +340,11 @@
                                         {% endif %}
                                     </div>
                                     <div class="btn-group btn-group-sm ms-3">
+                                        <!-- КНОПКА РЕДАКТИРОВАНИЯ -->
                                         <a href="{% url 'edit_education' edu.id %}" class="btn btn-outline-primary" title="Редактировать">
                                             ✏️
                                         </a>
+                                        <!-- КНОПКА УДАЛЕНИЯ -->
                                         <a href="{% url 'delete_education' edu.id %}"
                                            class="btn btn-outline-danger"
                                            onclick="return confirm('Удалить это образование?')"
@@ -338,14 +372,26 @@
                     <!-- Форма добавления в портфолио -->
                     <form method="post" enctype="multipart/form-data" class="mb-4">
                         {% csrf_token %}
-                        {{ portfolio_form.title }}
-                        {{ portfolio_form.description }}
+                        <div class="mb-3">
+                            <label class="form-label">{{ portfolio_form.title.label }}</label>
+                            {{ portfolio_form.title }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ portfolio_form.description.label }}</label>
+                            {{ portfolio_form.description }}
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
-                                {{ portfolio_form.file }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ portfolio_form.file.label }}</label>
+                                    {{ portfolio_form.file }}
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                {{ portfolio_form.link }}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ portfolio_form.link.label }}</label>
+                                    {{ portfolio_form.link }}
+                                </div>
                             </div>
                         </div>
                         <button type="submit" name="portfolio_submit" class="btn btn-success btn-sm mt-2">
@@ -355,7 +401,6 @@
 
                     <!-- Список портфолио -->
                     {% if portfolio_items %}
-                        <!-- В секции "Портфолио" -->
                         <div class="row">
                             {% for item in portfolio_items %}
                             <div class="col-md-6 mb-3">
@@ -364,9 +409,11 @@
                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                             <h6 class="card-title">{{ item.title }}</h6>
                                             <div class="btn-group btn-group-sm">
+                                                <!-- КНОПКА РЕДАКТИРОВАНИЯ -->
                                                 <a href="{% url 'edit_portfolio_item' item.id %}" class="btn btn-outline-primary" title="Редактировать">
                                                     ✏️
                                                 </a>
+                                                <!-- КНОПКА УДАЛЕНИЯ -->
                                                 <a href="{% url 'delete_portfolio_item' item.id %}"
                                                    class="btn btn-outline-danger"
                                                    onclick="return confirm('Удалить этот проект?')"

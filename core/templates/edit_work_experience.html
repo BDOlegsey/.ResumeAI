@@ -1,4 +1,3 @@
-<!-- [file name]: templates/edit_work_experience.html -->
 {% extends "base.html" %}
 
 {% block title %}Редактирование опыта работы{% endblock %}
@@ -18,7 +17,12 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">🏢 Компания</label>
-                                {{ form.company }}
+                                <input type="text"
+                                       name="company"
+                                       value="{{ form.company.value|default:'' }}"
+                                       class="form-control"
+                                       placeholder="Название компании"
+                                       required>
                                 {% if form.company.errors %}
                                 <div class="text-danger small">{{ form.company.errors }}</div>
                                 {% endif %}
@@ -27,7 +31,12 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">💼 Должность</label>
-                                {{ form.position }}
+                                <input type="text"
+                                       name="position"
+                                       value="{{ form.position.value|default:'' }}"
+                                       class="form-control"
+                                       placeholder="Должность"
+                                       required>
                                 {% if form.position.errors %}
                                 <div class="text-danger small">{{ form.position.errors }}</div>
                                 {% endif %}
@@ -39,7 +48,11 @@
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label class="form-label">📅 Дата начала</label>
-                                {{ form.start_date }}
+                                <input type="date"
+                                       name="start_date"
+                                       value="{{ form.start_date.value|date:'Y-m-d' }}"
+                                       class="form-control"
+                                       required>
                                 {% if form.start_date.errors %}
                                 <div class="text-danger small">{{ form.start_date.errors }}</div>
                                 {% endif %}
@@ -48,7 +61,12 @@
                         <div class="col-md-3">
                             <div class="mb-3">
                                 <label class="form-label">📅 Дата окончания</label>
-                                {{ form.end_date }}
+                                <input type="date"
+                                       name="end_date"
+                                       value="{{ form.end_date.value|date:'Y-m-d' }}"
+                                       class="form-control"
+                                       id="id_end_date"
+                                       {% if form.currently_working.value %}disabled{% endif %}>
                                 {% if form.end_date.errors %}
                                 <div class="text-danger small">{{ form.end_date.errors }}</div>
                                 {% endif %}
@@ -57,8 +75,12 @@
                         <div class="col-md-6">
                             <div class="mb-3 pt-4">
                                 <div class="form-check">
-                                    {{ form.currently_working }}
-                                    <label class="form-check-label" for="{{ form.currently_working.id_for_label }}">
+                                    <input type="checkbox"
+                                           name="currently_working"
+                                           class="form-check-input"
+                                           id="id_currently_working"
+                                           {% if form.currently_working.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_currently_working">
                                         Работаю сейчас
                                     </label>
                                 </div>
@@ -68,7 +90,10 @@
 
                     <div class="mb-3">
                         <label class="form-label">📋 Обязанности и достижения</label>
-                        {{ form.description }}
+                        <textarea name="description"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Обязанности, достижения, проекты...">{{ form.description.value|default:'' }}</textarea>
                         {% if form.description.errors %}
                         <div class="text-danger small">{{ form.description.errors }}</div>
                         {% endif %}
@@ -89,10 +114,9 @@
 </div>
 
 <script>
-// JavaScript для автоматического скрытия поля даты окончания при работе "сейчас"
 document.addEventListener('DOMContentLoaded', function() {
-    const currentlyWorkingCheckbox = document.getElementById('{{ form.currently_working.id_for_label }}');
-    const endDateField = document.getElementById('{{ form.end_date.id_for_label }}');
+    const currentlyWorkingCheckbox = document.getElementById('id_currently_working');
+    const endDateField = document.getElementById('id_end_date');
 
     function toggleEndDateField() {
         if (currentlyWorkingCheckbox.checked) {
@@ -103,10 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Инициализация при загрузке
     toggleEndDateField();
-
-    // Обработчик изменения checkbox
     currentlyWorkingCheckbox.addEventListener('change', toggleEndDateField);
 });
 </script>

@@ -392,10 +392,15 @@ def about(request):
 # [file name]: views.py
 # ДОБАВЛЯЕМ ЭТИ ФУНКЦИИ В КОНЕЦ ФАЙЛА, ПЕРЕД СУЩЕСТВУЮЩИЕ ФУНКЦИИ (help_page, contacts и т.д.)
 
+# В core/views.py - обновляем функции редактирования
+
 @login_required
 def edit_work_experience(request, experience_id):
     """Редактирование опыта работы"""
     experience = get_object_or_404(WorkExperience, id=experience_id, user=request.user)
+
+    print(f"DEBUG: Editing work experience {experience_id} for user {request.user.username}")
+    print(f"DEBUG: Experience data - {experience.position} at {experience.company}")
 
     if request.method == 'POST':
         form = WorkExperienceForm(request.POST, instance=experience)
@@ -403,6 +408,8 @@ def edit_work_experience(request, experience_id):
             form.save()
             messages.success(request, 'Опыт работы успешно обновлен!')
             return redirect('profile')
+        else:
+            print(f"DEBUG: Form errors - {form.errors}")
     else:
         form = WorkExperienceForm(instance=experience)
 
@@ -417,12 +424,16 @@ def edit_education(request, education_id):
     """Редактирование образования"""
     education = get_object_or_404(Education, id=education_id, user=request.user)
 
+    print(f"DEBUG: Editing education {education_id} for user {request.user.username}")
+
     if request.method == 'POST':
         form = EducationForm(request.POST, instance=education)
         if form.is_valid():
             form.save()
             messages.success(request, 'Образование успешно обновлено!')
             return redirect('profile')
+        else:
+            print(f"DEBUG: Form errors - {form.errors}")
     else:
         form = EducationForm(instance=education)
 
@@ -437,12 +448,16 @@ def edit_portfolio_item(request, item_id):
     """Редактирование проекта в портфолио"""
     item = get_object_or_404(PortfolioItem, id=item_id, user=request.user)
 
+    print(f"DEBUG: Editing portfolio item {item_id} for user {request.user.username}")
+
     if request.method == 'POST':
         form = PortfolioItemForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             messages.success(request, 'Проект успешно обновлен!')
             return redirect('profile')
+        else:
+            print(f"DEBUG: Form errors - {form.errors}")
     else:
         form = PortfolioItemForm(instance=item)
 
@@ -450,3 +465,4 @@ def edit_portfolio_item(request, item_id):
         'form': form,
         'item': item,
     })
+
