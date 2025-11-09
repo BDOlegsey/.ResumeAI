@@ -14,7 +14,8 @@ selenium
 
 # Document generation
 python-docx
-
+docxtpl
+jsonschema
 # Environment variable management
 python-dotenv
 
@@ -29,5 +30,5 @@ tqdm # Often used by LangChain for progress bars
 requests # Used by many libraries, including LangChain tools
 
 Django
-django-bootstrap5
+
 Pillow
