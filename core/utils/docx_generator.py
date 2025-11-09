@@ -89,13 +89,14 @@ class ResumeDOCXGenerator:
             # Добавляем разделитель между изображениями
             self.doc.add_paragraph()
 
-    def generate_resume_docx(self, resume_data, user_data, images_data=None, output_path=None):
+    def generate_resume_docx(self, resume_data, user_data, user_profile=None, images_data=None, output_path=None):
         """
         Generate DOCX resume from data
 
         Args:
             resume_data: Dict with resume content
             user_data: Dict with user information
+            user_profile: UserProfile object with additional data  # НОВЫЙ ПАРАМЕТР
             images_data: List of dicts with image paths and titles
             output_path: Path to save the DOCX file
         """
@@ -104,27 +105,117 @@ class ResumeDOCXGenerator:
             title = self.add_heading('ПРОФЕССИОНАЛЬНОЕ РЕЗЮМЕ', 0)
             title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-            # Personal Information
+            # Personal Information - ИСПОЛЬЗУЕМ ДАННЫЕ ИЗ ПРОФИЛЯ
             self.add_section_header('ЛИЧНАЯ ИНФОРМАЦИЯ')
-            personal_info = [
-                f"ФИО: {user_data.get('username', 'Не указано')}",
-                f"Профессия: {user_data.get('profession', 'Не указана')}",
-                f"Телефон: {user_data.get('phone', 'Не указан')}",
-                f"Email: {user_data.get('email', 'Не указан')}",
-                f"Дата создания: {datetime.now().strftime('%d.%m.%Y %H:%M')}"
-            ]
+
+            personal_info = []
+
+            # ФИО - приоритет у профиля, потом у user_data
+            if user_profile and user_profile.full_name:
+                personal_info.append(f"ФИО: {user_profile.full_name}")
+            else:
+                personal_info.append(f"ФИО: {user_data.get('username', 'Не указано')}")
+
+            # Профессия
+            if user_profile and user_profile.profession:
+                personal_info.append(f"Профессия: {user_profile.profession}")
+            else:
+                personal_info.append(f"Профессия: {user_data.get('profession', 'Не указана')}")
+
+            # Телефон
+            if user_profile and user_profile.phone:
+                personal_info.append(f"Телефон: {user_profile.phone}")
+            else:
+                personal_info.append(f"Телефон: {user_data.get('phone', 'Не указан')}")
+
+            # Email
+            if user_profile and user_profile.email:
+                personal_info.append(f"Email: {user_profile.email}")
+            else:
+                personal_info.append(f"Email: {user_data.get('email', 'Не указан')}")
+
+            # Дополнительные поля из профиля (если есть)
+            if user_profile and user_profile.address:
+                personal_info.append(f"Адрес: {user_profile.address}")
+
+            if user_profile and user_profile.citizenship:
+                personal_info.append(f"Гражданство: {user_profile.citizenship}")
+
+            if user_profile and user_profile.birth_date:
+                age = user_profile.age
+                personal_info.append(f"Дата рождения: {user_profile.birth_date} ({age} лет)")
+
+            if user_profile and user_profile.gender:
+                personal_info.append(f"Пол: {user_profile.get_gender_display()}")
+
+            personal_info.append(f"Дата создания резюме: {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+
             self.add_bullet_points(personal_info)
 
+            # ДОБАВЛЯЕМ РАЗДЕЛ С ОПЫТОМ РАБОТЫ ИЗ ПРОФИЛЯ
+            if user_profile and user_profile.work_experiences.exists():
+                self.add_section_header('ОПЫТ РАБОТЫ')
+
+                for exp in user_profile.work_experiences.all().order_by('-start_date'):
+                    exp_paragraph = self.doc.add_paragraph()
+
+                    # Название должности и компании жирным
+                    position_run = exp_paragraph.add_run(f"{exp.position} в {exp.company}")
+                    position_run.bold = True
+
+                    # Даты
+                    dates_text = f" ({exp.start_date.strftime('%m.%Y')} - "
+                    if exp.currently_working:
+                        dates_text += "по настоящее время)"
+                    else:
+                        dates_text += f"{exp.end_date.strftime('%m.%Y')})"
+
+                    dates_run = exp_paragraph.add_run(dates_text)
+
+                    # Описание (если есть)
+                    if exp.description:
+                        desc_paragraph = self.doc.add_paragraph(exp.description)
+                        desc_paragraph.style = 'List Bullet'
+
+            # ДОБАВЛЯЕМ РАЗДЕЛ С ОБРАЗОВАНИЕМ ИЗ ПРОФИЛЯ
+            if user_profile and user_profile.educations.exists():
+                self.add_section_header('ОБРАЗОВАНИЕ')
+
+                for edu in user_profile.educations.all().order_by('-start_date'):
+                    edu_paragraph = self.doc.add_paragraph()
+
+                    # Учебное заведение и специальность жирным
+                    institution_run = edu_paragraph.add_run(f"{edu.institution} - {edu.specialty}")
+                    institution_run.bold = True
+
+                    # Уровень образования и даты
+                    degree_dates = f" ({edu.get_degree_display()}, {edu.start_date.strftime('%m.%Y')} - "
+                    if edu.currently_studying:
+                        degree_dates += "по настоящее время)"
+                    else:
+                        degree_dates += f"{edu.end_date.strftime('%m.%Y')})"
+
+                    degree_run = edu_paragraph.add_run(degree_dates)
+
+                    # Описание (если есть)
+                    if edu.description:
+                        desc_paragraph = self.doc.add_paragraph(edu.description)
+                        desc_paragraph.style = 'List Bullet'
+
+            # ДОБАВЛЯЕМ РАЗДЕЛ С НАВЫКАМИ ИЗ ПРОФИЛЯ
+            if user_profile and user_profile.skills:
+                self.add_section_header('НАВЫКИ И УМЕНИЯ')
+                skills_paragraph = self.doc.add_paragraph(user_profile.skills)
+
+            # Остальной код без изменений...
             # Career Objective
             if resume_data.get('employers'):
                 self.add_section_header('ЦЕЛЬ КАРЬЕРЫ')
                 self.add_paragraph(resume_data['employers'])
 
-            # Professional Experience
+            # Professional Experience from form
             if resume_data.get('achievements'):
                 self.add_section_header('ПРОФЕССИОНАЛЬНЫЙ ОПЫТ И НАВЫКИ')
-
-                # Split achievements by lines or bullets
                 achievements = resume_data['achievements'].split('\n')
                 achievements = [ach.strip() for ach in achievements if ach.strip()]
                 self.add_bullet_points(achievements)
@@ -199,20 +290,20 @@ def create_resume_docx(resume_request, user_profile=None):
     filename = f"resume_{resume_request.user.username}_{timestamp}.docx"
     file_path = os.path.join(settings.MEDIA_ROOT, 'resumes', f'user_{resume_request.user.id}', filename)
 
-    # Generate DOCX
+    # Generate DOCX - ПЕРЕДАЕМ user_profile В ФУНКЦИЮ
     generator = ResumeDOCXGenerator()
-    success = generator.generate_resume_docx(resume_data, user_data, images_data, file_path)
+    success = generator.generate_resume_docx(
+        resume_data,
+        user_data,
+        user_profile,  # НОВЫЙ АРГУМЕНТ
+        images_data,
+        file_path
+    )
 
     if success:
-        # Save file path to model
         relative_path = file_path.replace(settings.MEDIA_ROOT, '').lstrip('/')
         resume_request.resume_file.name = relative_path
         resume_request.save()
-
-        # Добавляем информацию о изображениях в лог
-        if images_data:
-            print(f"Added {len(images_data)} images to DOCX")
-
         return file_path
 
     return None

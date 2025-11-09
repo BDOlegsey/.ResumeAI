@@ -1,0 +1,73 @@
+<!-- [file name]: templates/edit_portfolio_item.html -->
+{% extends "base.html" %}
+
+{% block title %}Редактирование проекта{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">✏️ Редактирование проекта</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">📁 Название проекта</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="text-danger small">{{ form.title.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">📝 Описание проекта</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger small">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">📎 Файл проекта</label>
+                                {{ form.file }}
+                                {% if form.file.errors %}
+                                <div class="text-danger small">{{ form.file.errors }}</div>
+                                {% endif %}
+                                {% if item.file %}
+                                    <div class="form-text mt-1">
+                                        Текущий файл: <a href="{{ item.file.url }}" target="_blank">{{ item.file.name }}</a>
+                                        <br><small>Оставьте поле пустым, чтобы сохранить текущий файл</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">🔗 Ссылка на проект</label>
+                                {{ form.link }}
+                                {% if form.link.errors %}
+                                <div class="text-danger small">{{ form.link.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            💾 Сохранить изменения
+                        </button>
+                        <a href="{% url 'profile' %}" class="btn btn-secondary">
+                            ↩️ Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

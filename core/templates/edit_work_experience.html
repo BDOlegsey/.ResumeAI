@@ -1,0 +1,113 @@
+<!-- [file name]: templates/edit_work_experience.html -->
+{% extends "base.html" %}
+
+{% block title %}Редактирование опыта работы{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">✏️ Редактирование опыта работы</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">🏢 Компания</label>
+                                {{ form.company }}
+                                {% if form.company.errors %}
+                                <div class="text-danger small">{{ form.company.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">💼 Должность</label>
+                                {{ form.position }}
+                                {% if form.position.errors %}
+                                <div class="text-danger small">{{ form.position.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">📅 Дата начала</label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}
+                                <div class="text-danger small">{{ form.start_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">📅 Дата окончания</label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}
+                                <div class="text-danger small">{{ form.end_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3 pt-4">
+                                <div class="form-check">
+                                    {{ form.currently_working }}
+                                    <label class="form-check-label" for="{{ form.currently_working.id_for_label }}">
+                                        Работаю сейчас
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">📋 Обязанности и достижения</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="text-danger small">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            💾 Сохранить изменения
+                        </button>
+                        <a href="{% url 'profile' %}" class="btn btn-secondary">
+                            ↩️ Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript для автоматического скрытия поля даты окончания при работе "сейчас"
+document.addEventListener('DOMContentLoaded', function() {
+    const currentlyWorkingCheckbox = document.getElementById('{{ form.currently_working.id_for_label }}');
+    const endDateField = document.getElementById('{{ form.end_date.id_for_label }}');
+
+    function toggleEndDateField() {
+        if (currentlyWorkingCheckbox.checked) {
+            endDateField.disabled = true;
+            endDateField.value = '';
+        } else {
+            endDateField.disabled = false;
+        }
+    }
+
+    // Инициализация при загрузке
+    toggleEndDateField();
+
+    // Обработчик изменения checkbox
+    currentlyWorkingCheckbox.addEventListener('change', toggleEndDateField);
+});
+</script>
+{% endblock %}

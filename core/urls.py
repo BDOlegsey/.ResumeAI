@@ -1,3 +1,4 @@
+# [file name]: urls.py
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
@@ -26,6 +27,15 @@ urlpatterns = [
     # Изображения
     path("upload-images/", views.upload_images, name="upload_images"),
     path("delete-image/<int:image_id>/", views.delete_image, name="delete_image"),
+
+    # РЕДАКТИРОВАНИЕ ПРОФИЛЯ - ДОБАВЛЯЕМ ЭТИ МАРШРУТЫ
+    path("profile/work-experience/edit/<int:experience_id>/", views.edit_work_experience, name="edit_work_experience"),
+    path("profile/work-experience/delete/<int:experience_id>/", views.delete_work_experience,
+         name="delete_work_experience"),
+    path("profile/education/edit/<int:education_id>/", views.edit_education, name="edit_education"),
+    path("profile/education/delete/<int:education_id>/", views.delete_education, name="delete_education"),
+    path("profile/portfolio/edit/<int:item_id>/", views.edit_portfolio_item, name="edit_portfolio_item"),
+    path("profile/portfolio/delete/<int:item_id>/", views.delete_portfolio_item, name="delete_portfolio_item"),
 ]
 
 # Serve media files in development

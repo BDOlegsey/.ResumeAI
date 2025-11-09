@@ -1,3 +1,4 @@
+# [file name]: views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, FileResponse, Http404
 from django.contrib.auth import login, logout, authenticate
@@ -9,11 +10,101 @@ from django.db import transaction
 import os
 from datetime import datetime
 
-from .forms import CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm, UserImageForm
-from .models import ResumeRequest, UserProfile, UserImage
+from .forms import (
+    CustomUserCreationForm, CustomAuthenticationForm, UserProfileForm,
+    UserImageForm, WorkExperienceForm, EducationForm, PortfolioItemForm
+)
+from .models import ResumeRequest, UserProfile, UserImage, WorkExperience, Education, PortfolioItem
 from .utils.docx_generator import create_resume_docx
 
 
+@login_required
+def profile(request):
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+    # Получаем связанные данные
+    work_experiences = WorkExperience.objects.filter(user=request.user).order_by('-start_date')
+    educations = Education.objects.filter(user=request.user).order_by('-start_date')
+    portfolio_items = PortfolioItem.objects.filter(user=request.user).order_by('-created_at')
+
+    # Формы
+    profile_form = UserProfileForm(request.POST or None, request.FILES or None, instance=user_profile)
+    work_exp_form = WorkExperienceForm(request.POST or None)
+    education_form = EducationForm(request.POST or None)
+    portfolio_form = PortfolioItemForm(request.POST or None, request.FILES or None)
+
+    if request.method == 'POST':
+        # Обработка основной формы профиля
+        if 'profile_submit' in request.POST and profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, 'Профиль успешно обновлен!')
+            return redirect('profile')
+
+        # Обработка формы опыта работы
+        elif 'work_exp_submit' in request.POST and work_exp_form.is_valid():
+            work_exp = work_exp_form.save(commit=False)
+            work_exp.user = request.user
+            work_exp.save()
+            messages.success(request, 'Опыт работы добавлен!')
+            return redirect('profile')
+
+        # Обработка формы образования
+        elif 'education_submit' in request.POST and education_form.is_valid():
+            education = education_form.save(commit=False)
+            education.user = request.user
+            education.save()
+            messages.success(request, 'Образование добавлено!')
+            return redirect('profile')
+
+        # Обработка формы портфолио
+        elif 'portfolio_submit' in request.POST and portfolio_form.is_valid():
+            portfolio_item = portfolio_form.save(commit=False)
+            portfolio_item.user = request.user
+            portfolio_item.save()
+            messages.success(request, 'Проект добавлен в портфолио!')
+            return redirect('profile')
+
+    # Статистика пользователя
+    total_requests = ResumeRequest.objects.filter(user=request.user).count()
+
+    return render(request, 'profile.html', {
+        'profile_form': profile_form,
+        'work_exp_form': work_exp_form,
+        'education_form': education_form,
+        'portfolio_form': portfolio_form,
+        'work_experiences': work_experiences,
+        'educations': educations,
+        'portfolio_items': portfolio_items,
+        'total_requests': total_requests,
+        'user_profile': user_profile,
+    })
+
+
+@login_required
+def delete_work_experience(request, experience_id):
+    experience = get_object_or_404(WorkExperience, id=experience_id, user=request.user)
+    experience.delete()
+    messages.success(request, 'Опыт работы удален!')
+    return redirect('profile')
+
+
+@login_required
+def delete_education(request, education_id):
+    education = get_object_or_404(Education, id=education_id, user=request.user)
+    education.delete()
+    messages.success(request, 'Образование удалено!')
+    return redirect('profile')
+
+
+@login_required
+def delete_portfolio_item(request, item_id):
+    item = get_object_or_404(PortfolioItem, id=item_id, user=request.user)
+    item.delete()
+    messages.success(request, 'Проект удален из портфолио!')
+    return redirect('profile')
+
+
+# ... остальные существующие функции (index, upload_images, etc.) ...
 @login_required
 def index(request):
     if request.method == "POST":
@@ -219,29 +310,6 @@ def view_resume_file(request, request_id):
     )
 
 
-@login_required
-def profile(request):
-    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-
-    if request.method == 'POST':
-        form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Профиль успешно обновлен!')
-            return redirect('profile')
-    else:
-        form = UserProfileForm(instance=user_profile)
-
-    total_requests = ResumeRequest.objects.filter(user=request.user).count()
-    recent_requests = ResumeRequest.objects.filter(user=request.user).order_by('-created_at')[:5]
-
-    return render(request, 'profile.html', {
-        'form': form,
-        'total_requests': total_requests,
-        'recent_requests': recent_requests
-    })
-
-
 def generate_resume_placeholder(employers, achievements, username):
     return (
         f"📄 ПРОФЕССИОНАЛЬНОЕ РЕЗЮМЕ\n"
@@ -320,3 +388,65 @@ def how_it_works(request):
 def about(request):
     return render(request, "about.html")
 
+
+# [file name]: views.py
+# ДОБАВЛЯЕМ ЭТИ ФУНКЦИИ В КОНЕЦ ФАЙЛА, ПЕРЕД СУЩЕСТВУЮЩИЕ ФУНКЦИИ (help_page, contacts и т.д.)
+
+@login_required
+def edit_work_experience(request, experience_id):
+    """Редактирование опыта работы"""
+    experience = get_object_or_404(WorkExperience, id=experience_id, user=request.user)
+
+    if request.method == 'POST':
+        form = WorkExperienceForm(request.POST, instance=experience)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Опыт работы успешно обновлен!')
+            return redirect('profile')
+    else:
+        form = WorkExperienceForm(instance=experience)
+
+    return render(request, 'edit_work_experience.html', {
+        'form': form,
+        'experience': experience,
+    })
+
+
+@login_required
+def edit_education(request, education_id):
+    """Редактирование образования"""
+    education = get_object_or_404(Education, id=education_id, user=request.user)
+
+    if request.method == 'POST':
+        form = EducationForm(request.POST, instance=education)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Образование успешно обновлено!')
+            return redirect('profile')
+    else:
+        form = EducationForm(instance=education)
+
+    return render(request, 'edit_education.html', {
+        'form': form,
+        'education': education,
+    })
+
+
+@login_required
+def edit_portfolio_item(request, item_id):
+    """Редактирование проекта в портфолио"""
+    item = get_object_or_404(PortfolioItem, id=item_id, user=request.user)
+
+    if request.method == 'POST':
+        form = PortfolioItemForm(request.POST, request.FILES, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Проект успешно обновлен!')
+            return redirect('profile')
+    else:
+        form = PortfolioItemForm(instance=item)
+
+    return render(request, 'edit_portfolio_item.html', {
+        'form': form,
+        'item': item,
+    })
