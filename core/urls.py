@@ -19,15 +19,19 @@ urlpatterns = [
     # История и профиль
     path("history/", views.history, name="history"),
     path("profile/", views.profile, name="profile"),
+
+    # Детали и скачивание
     path("resume/<int:request_id>/", views.resume_detail, name="resume_detail"),
-    path("resume/<int:request_id>/download/", views.download_resume, name="download_resume"),
-    path("resume/<int:request_id>/view/", views.view_resume_file, name="view_resume_file"),
+    path("resume/<int:request_id>/download-archive/", views.download_archive, name="download_archive"),
+    path("resume/result/<int:result_id>/download-docx/", views.download_result_docx, name="download_result_docx"),
+    path("resume/result/<int:result_id>/download-json/", views.download_result_json, name="download_result_json"),
+    path("resume/<int:request_id>/view-archive/", views.view_archive_file, name="view_archive_file"),
 
     # Изображения
     path("upload-images/", views.upload_images, name="upload_images"),
     path("delete-image/<int:image_id>/", views.delete_image, name="delete_image"),
 
-    # РЕДАКТИРОВАНИЕ ПРОФИЛЯ - ВАЖНО: правильный порядок!
+    # Редактирование профиля
     path("profile/work-experience/edit/<int:experience_id>/", views.edit_work_experience, name="edit_work_experience"),
     path("profile/work-experience/delete/<int:experience_id>/", views.delete_work_experience, name="delete_work_experience"),
     path("profile/education/edit/<int:education_id>/", views.edit_education, name="edit_education"),

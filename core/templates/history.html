@@ -3,82 +3,56 @@
 {% block title %}История запросов{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h2 class="h4 mb-0">📋 История ваших резюме</h2>
-                <a href="{% url 'index' %}" class="btn btn-primary btn-sm">Создать новое резюме</a>
-            </div>
-            <div class="card-body">
-                {% if resume_requests %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+<div class="container py-4">
+  <h1 class="mb-4">История запросов</h1>
 
-
-                        <!-- В templates/history.html добавляем колонку с изображениями -->
-                        <thead>
-                            <tr>
-                                <th>Дата создания</th>
-                                <th>Работодатели</th>
-                                <th>Достижения</th>
-                                <th>Изображения</th>
-                                <th>Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for request in resume_requests %}
-                            <tr>
-                                <td>{{ request.created_at|date:"d.m.Y H:i" }}</td>
-                                <td>
-                                    <div class="text-truncate" style="max-width: 200px;"
-                                         title="{{ request.employers }}">
-                                        {{ request.employers|truncatewords:10 }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="text-truncate" style="max-width: 200px;"
-                                         title="{{ request.achievements }}">
-                                        {{ request.achievements|truncatewords:10 }}
-                                    </div>
-                                </td>
-                                <td>
-                                    {% if request.images.all %}
-                                        <span class="badge bg-success">{{ request.images.count }} 🖼️</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Нет</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'resume_detail' request.id %}"
-                                           class="btn btn-outline-primary">Просмотр</a>
-                                        <a href="{% url 'download_resume' request.id %}"
-                                           class="btn btn-outline-success">Скачать</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-
-
-                        </table>
-                    </div>
-
-                    <div class="alert alert-info mt-3">
-                        <strong>Всего запросов:</strong> {{ resume_requests|length }}
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <div class="text-muted mb-3">
-                            <h4>У вас еще нет созданных резюме</h4>
-                            <p>Создайте свое первое резюме, чтобы увидеть его здесь</p>
-                        </div>
-                        <a href="{% url 'index' %}" class="btn btn-primary">Создать первое резюме</a>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
+  {% if resume_requests %}
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Целей</th>
+            <th>Статус</th>
+            <th>Архив</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for req in resume_requests %}
+          <tr>
+            <td>{{ req.created_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ req.targets|length }}</td>
+            <td>
+              {% if req.status == 'done' %}
+                <span class="badge bg-success">Готово</span>
+              {% elif req.status == 'running' %}
+                <span class="badge bg-warning text-dark">Генерация</span>
+              {% elif req.status == 'failed' %}
+                <span class="badge bg-danger">Ошибка</span>
+              {% elif req.status == 'partial' %}
+                <span class="badge bg-info text-dark">Частично</span>
+              {% else %}
+                <span class="badge bg-secondary">В обработке</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if req.archive_file %}
+                <a href="{% url 'download_archive' req.id %}" class="btn btn-sm btn-primary">Скачать</a>
+              {% else %}
+                <span class="text-muted">Нет</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'resume_detail' req.id %}" class="btn btn-sm btn-outline-primary">Детали</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
+  {% else %}
+    <div class="alert alert-info">Создайте свое первое резюме, чтобы увидеть его здесь.</div>
+  {% endif %}
 </div>
 {% endblock %}
