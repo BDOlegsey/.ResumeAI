@@ -51,13 +51,16 @@ def _check_node(state: ResumeState) -> ResumeState:
     )
     state["approved"] = approved
     state["errors"] = errors
+
+    if not approved:
+        state["retries"] = state.get("retries", 0) + 1
+
     return state
 
 def _should_retry(state: ResumeState) -> str:
     if state.get("approved"):
         return "end"
     if state.get("retries", 0) < MAX_RETRIES:
-        state["retries"] = state.get("retries", 0) + 1
         logger.info("Retrying generation (%s/%s) for company=%s",
                     state["retries"], MAX_RETRIES, state["target"].get("company"))
         return "generate"

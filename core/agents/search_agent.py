@@ -1,9 +1,13 @@
 import logging
 from typing import Dict, Any, List
 import os
+import sys
 from django.conf import settings
 
 from langchain_perplexity import ChatPerplexity
+
+sys.path.append(os.path.abspath('C:\\Users\\Алексей\\OneDrive\\Рабочий стол\\ВУЗ\\ResumeAI\\core\\agents'))
+from system_prompts import SYSTEM_INSTRUCTIONS_SEARCHER
 
 logger = logging.getLogger('core.agents')
 
@@ -31,11 +35,7 @@ def search_for_target(plan: Dict[str, Any]) -> Dict[str, Any]:
 
     llm = _get_llm()
     prompt = (
-        "Ты аналитик рынка труда. Выполни веб-поиск и дай краткий отчет:\n"
-        "- Требования к вакансии (обязательные/желательные)\n"
-        "- Технологический стек, практики разработки\n"
-        "- Культура и ценности компании (если есть)\n"
-        "- Ссылки/источники\n\n"
+        f"{SYSTEM_INSTRUCTIONS_SEARCHER}\n\n"
         "Запросы:\n- " + "\n- ".join(search_goals) + "\n\n"
         "Ответ верни в JSON с полями: summary (строка), bullets (список строк), citations (список URL).\n"
     )

@@ -6,6 +6,7 @@ from django.conf import settings
 from langchain_perplexity import ChatPerplexity
 from langchain_core.output_parsers import JsonOutputParser
 from .schemas import SCHEMA
+from system_prompts import SYSTEM_INSTRUCTIONS_GENERATOR
 
 logger = logging.getLogger('core.agents')
 
@@ -23,12 +24,6 @@ def _get_llm():
     api_key = _resolve_api_key()
     return ChatPerplexity(model="sonar-pro", api_key=api_key, temperature=0.2)
 
-SYSTEM_INSTRUCTIONS = (
-    "Ты помощник по созданию резюме. Верни строго валидный JSON по схеме. "
-    "Не выдумывай фактов, улучшай формулировки и стиль без искажения смысла. "
-    "Ответ должен содержать только JSON, без пояснений."
-)
-
 def generate_resume_json(user_profile: Dict[str, Any], target: Dict[str, Any],
                          plan: Dict[str, Any], search_data: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -39,7 +34,7 @@ def generate_resume_json(user_profile: Dict[str, Any], target: Dict[str, Any],
     schema_text = json.dumps(SCHEMA, ensure_ascii=False)
 
     prompt = (
-        f"{SYSTEM_INSTRUCTIONS}\n\n"
+        f"{SYSTEM_INSTRUCTIONS_GENERATOR}\n\n"
         f"JSON Schema (ориентир для ключей/типов):\n{schema_text}\n\n"
         "Данные пользователя:\n"
         f"{json.dumps(user_profile, ensure_ascii=False, indent=2)}\n\n"

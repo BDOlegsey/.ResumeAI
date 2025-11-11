@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv()
+
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-secret-key')
 DEBUG = bool(int(os.getenv('DEBUG', '1')))
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
@@ -69,7 +71,7 @@ ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp']
 
 # Ключ Perplexity читаем из нескольких переменных
 PERPLEXITY_API_KEY = (
-    load_dotenv("PERPLEXITY_API_KEY")
+    os.getenv("PERPLEXITY_API_KEY")
 )
 
 # Шаблон DOCX (как в примере: template.docx в корне)

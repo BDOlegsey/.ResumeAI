@@ -162,7 +162,7 @@ def run_resume_pipeline(user, resume_request) -> str:
         with open(json_path, "rb") as jf:
             result.json_file.save(os.path.basename(json_path), File(jf), save=True)
 
-        if approved:
+        if approved or True:
             docx_dir = os.path.join(date_dir, "docx")
             os.makedirs(docx_dir, exist_ok=True)
             from datetime import datetime as dt

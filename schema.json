@@ -47,7 +47,7 @@
       "items": {
         "type": "object",
         "properties": {
-          "year": { "type": "integer" },
+          "year": { "type": "string" },
           "university": { "type": "string" },
           "degree": { "type": "string" },
           "faculty": { "type": "string" },
