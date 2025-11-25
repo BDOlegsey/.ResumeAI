@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h4 mb-0">Регистрация</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Ошибка!</strong> Пожалуйста, исправьте ошибки ниже.
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Имя пользователя</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="text-danger small">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_email" class="form-label">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <div class="text-danger small">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password1" class="form-label">Пароль</label>
+                        {{ form.password1 }}
+                        {% if form.password1.errors %}
+                        <div class="text-danger small">{{ form.password1.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            <ul class="small">
+                                <li>Пароль не должен быть слишком похож на другую вашу личную информацию.</li>
+                                <li>Пароль должен содержать как минимум 8 символов.</li>
+                                <li>Пароль не должен быть слишком простым и распространенным.</li>
+                                <li>Пароль не может состоять только из цифр.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_password2" class="form-label">Подтверждение пароля</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                        <div class="text-danger small">{{ form.password2.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        Зарегистрироваться
+                    </button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p>Уже есть аккаунт? <a href="{% url 'login' %}" class="text-decoration-none">Войдите</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

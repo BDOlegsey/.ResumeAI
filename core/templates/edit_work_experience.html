@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование опыта работы{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">✏️ Редактирование опыта работы</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">🏢 Компания</label>
+                                <input type="text"
+                                       name="company"
+                                       value="{{ form.company.value|default:'' }}"
+                                       class="form-control"
+                                       placeholder="Название компании"
+                                       required>
+                                {% if form.company.errors %}
+                                <div class="text-danger small">{{ form.company.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">💼 Должность</label>
+                                <input type="text"
+                                       name="position"
+                                       value="{{ form.position.value|default:'' }}"
+                                       class="form-control"
+                                       placeholder="Должность"
+                                       required>
+                                {% if form.position.errors %}
+                                <div class="text-danger small">{{ form.position.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">📅 Дата начала</label>
+                                <input type="date"
+                                       name="start_date"
+                                       value="{{ form.start_date.value|date:'Y-m-d' }}"
+                                       class="form-control"
+                                       required>
+                                {% if form.start_date.errors %}
+                                <div class="text-danger small">{{ form.start_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">📅 Дата окончания</label>
+                                <input type="date"
+                                       name="end_date"
+                                       value="{{ form.end_date.value|date:'Y-m-d' }}"
+                                       class="form-control"
+                                       id="id_end_date"
+                                       {% if form.currently_working.value %}disabled{% endif %}>
+                                {% if form.end_date.errors %}
+                                <div class="text-danger small">{{ form.end_date.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3 pt-4">
+                                <div class="form-check">
+                                    <input type="checkbox"
+                                           name="currently_working"
+                                           class="form-check-input"
+                                           id="id_currently_working"
+                                           {% if form.currently_working.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_currently_working">
+                                        Работаю сейчас
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">📋 Обязанности и достижения</label>
+                        <textarea name="description"
+                                  class="form-control"
+                                  rows="4"
+                                  placeholder="Обязанности, достижения, проекты...">{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                        <div class="text-danger small">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            💾 Сохранить изменения
+                        </button>
+                        <a href="{% url 'profile' %}" class="btn btn-secondary">
+                            ↩️ Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentlyWorkingCheckbox = document.getElementById('id_currently_working');
+    const endDateField = document.getElementById('id_end_date');
+
+    function toggleEndDateField() {
+        if (currentlyWorkingCheckbox.checked) {
+            endDateField.disabled = true;
+            endDateField.value = '';
+        } else {
+            endDateField.disabled = false;
+        }
+    }
+
+    toggleEndDateField();
+    currentlyWorkingCheckbox.addEventListener('change', toggleEndDateField);
+});
+</script>
+{% endblock %}
