@@ -9,36 +9,35 @@ __pycache__/
 .venv/
 venv/
 node_modules/
-.mypy_cache/
-.pytest_cache/
-*.egg-info/
-dist/
-build/
-target/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
-*.swo
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # Coverage
+.coverage
 coverage/
 htmlcov/
-.coverage
 
-# System
-.DS_Store
-Thumbs.db
+# Python specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Testing
+.pytest_cache/
+.mypy_cache/
 ```
