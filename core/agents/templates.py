@@ -1,0 +1,962 @@
+"""
+Международные шаблоны резюме
+"""
+from typing import Dict, Any
+
+# Схемы для различных международных форматов резюме
+TEMPLATES = {
+    "europass": {
+        "title": "Europass CV",
+        "description": "Европейский стандарт резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "EuropassCVData",
+            "type": "object",
+            "properties": {
+                "full_name": {"type": "string"},
+                "nationality": {"type": "string"},
+                "photo_url": {"type": "string", "format": "uri"},
+                "birth_date": {"type": "string", "format": "date"},
+                "gender": {"type": "string", "enum": ["male", "female", "other"]},
+                "address": {
+                    "type": "object",
+                    "properties": {
+                        "street": {"type": "string"},
+                        "city": {"type": "string"},
+                        "postal_code": {"type": "string"},
+                        "country": {"type": "string"}
+                    },
+                    "required": ["street", "city", "country"]
+                },
+                "contact_info": {
+                    "type": "object",
+                    "properties": {
+                        "phone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"},
+                        "linkedin": {"type": "string", "format": "uri"},
+                        "website": {"type": "string", "format": "uri"}
+                    },
+                    "required": ["email"]
+                },
+                "work_experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "start_date": {"type": "string", "format": "date"},
+                            "end_date": {"type": "string", "format": "date"},
+                            "job_title": {"type": "string"},
+                            "employer": {"type": "string"},
+                            "activities": {"type": "string"},
+                            "country": {"type": "string"}
+                        },
+                        "required": ["start_date", "job_title", "employer"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "start_date": {"type": "string", "format": "date"},
+                            "end_date": {"type": "string", "format": "date"},
+                            "qualification": {"type": "string"},
+                            "institution": {"type": "string"},
+                            "country": {"type": "string"},
+                            "level": {"type": "string"}
+                        },
+                        "required": ["start_date", "qualification", "institution"]
+                    }
+                },
+                "mother_tongue": {"type": "string"},
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "language": {"type": "string"},
+                            "listening": {"type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"]},
+                            "reading": {"type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"]},
+                            "spontaneous_speaking": {"type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"]},
+                            "writing": {"type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"]},
+                            "understanding": {"type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"]}
+                        },
+                        "required": ["language"]
+                    }
+                },
+                "skills": {
+                    "type": "object",
+                    "properties": {
+                        "communication_skills": {"type": "array", "items": {"type": "string"}},
+                        "organisational_skills": {"type": "array", "items": {"type": "string"}},
+                        "job_related_skills": {"type": "array", "items": {"type": "string"}},
+                        "computer_skills": {"type": "array", "items": {"type": "string"}},
+                        "other_skills": {"type": "array", "items": {"type": "string"}},
+                        "additional_info": {"type": "string"},
+                        "annexes": {"type": "array", "items": {"type": "string"}}
+                    }
+                }
+            },
+            "required": ["full_name", "birth_date", "contact_info", "work_experience", "education", "mother_tongue", "languages", "skills"]
+        }
+    },
+    "ats_optimized": {
+        "title": "ATS-Optimized Resume",
+        "description": "Резюме, оптимизированное для систем отслеживания кандидатов",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "ATSResumeData",
+            "type": "object",
+            "properties": {
+                "full_name": {"type": "string"},
+                "phone": {"type": "string"},
+                "email": {"type": "string", "format": "email"},
+                "location": {"type": "string"},
+                "summary": {"type": "string"},
+                "experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "company": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"},
+                            "description": {"type": "string"}
+                        },
+                        "required": ["title", "company", "start_date"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree": {"type": "string"},
+                            "school": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"}
+                        },
+                        "required": ["degree", "school", "start_date"]
+                    }
+                },
+                "skills": {"type": "array", "items": {"type": "string"}},
+                "keywords": {"type": "array", "items": {"type": "string"}},
+                "certifications": {"type": "array", "items": {"type": "string"}},
+                "achievements": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["full_name", "phone", "email", "summary", "experience", "education", "skills"]
+        }
+    },
+    "chronological": {
+        "title": "Chronological Resume",
+        "description": "Классическое хронологическое резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "ChronologicalResumeData",
+            "type": "object",
+            "properties": {
+                "header": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "title": {"type": "string"},
+                        "contact": {
+                            "type": "object",
+                            "properties": {
+                                "phone": {"type": "string"},
+                                "email": {"type": "string", "format": "email"},
+                                "address": {"type": "string"},
+                                "linkedin": {"type": "string"},
+                                "website": {"type": "string"}
+                            }
+                        }
+                    },
+                    "required": ["name", "title"]
+                },
+                "summary": {"type": "string"},
+                "work_experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "position": {"type": "string"},
+                            "company": {"type": "string"},
+                            "location": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"},
+                            "responsibilities": {"type": "array", "items": {"type": "string"}},
+                            "achievements": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["position", "company", "start_date"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree": {"type": "string"},
+                            "school": {"type": "string"},
+                            "location": {"type": "string"},
+                            "graduation_date": {"type": "string"},
+                            "gpa": {"type": "string"}
+                        },
+                        "required": ["degree", "school", "graduation_date"]
+                    }
+                },
+                "skills": {"type": "array", "items": {"type": "string"}},
+                "certifications": {"type": "array", "items": {"type": "string"}},
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "description": {"type": "string"},
+                            "technologies": {"type": "array", "items": {"type": "string"}},
+                            "date": {"type": "string"}
+                        },
+                        "required": ["name", "description"]
+                    }
+                }
+            },
+            "required": ["header", "summary", "work_experience", "education", "skills"]
+        }
+    },
+    "functional": {
+        "title": "Functional Resume",
+        "description": "Функциональное резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "FunctionalResumeData",
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "contact": {
+                    "type": "object",
+                    "properties": {
+                        "phone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"},
+                        "address": {"type": "string"},
+                        "linkedin": {"type": "string"},
+                        "website": {"type": "string"}
+                    }
+                },
+                "objective": {"type": "string"},
+                "skills_summary": {
+                    "type": "object",
+                    "properties": {
+                        "core_competencies": {"type": "array", "items": {"type": "string"}},
+                        "professional_skills": {"type": "array", "items": {"type": "string"}},
+                        "technical_skills": {"type": "array", "items": {"type": "string"}},
+                        "soft_skills": {"type": "array", "items": {"type": "string"}}
+                    }
+                },
+                "professional_experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "skill_category": {"type": "string"},
+                            "examples": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "company": {"type": "string"},
+                                        "position": {"type": "string"},
+                                        "duration": {"type": "string"},
+                                        "description": {"type": "string"}
+                                    },
+                                    "required": ["company", "position", "description"]
+                                }
+                            }
+                        },
+                        "required": ["skill_category", "examples"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree": {"type": "string"},
+                            "school": {"type": "string"},
+                            "location": {"type": "string"},
+                            "graduation_date": {"type": "string"}
+                        },
+                        "required": ["degree", "school", "graduation_date"]
+                    }
+                },
+                "additional_information": {
+                    "type": "object",
+                    "properties": {
+                        "certifications": {"type": "array", "items": {"type": "string"}},
+                        "volunteer_work": {"type": "array", "items": {"type": "string"}},
+                        "languages": {"type": "array", "items": {"type": "string"}},
+                        "interests": {"type": "array", "items": {"type": "string"}}
+                    }
+                }
+            },
+            "required": ["name", "skills_summary", "professional_experience", "education"]
+        }
+    },
+    "combination": {
+        "title": "Combination Resume",
+        "description": "Комбинированное резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "CombinationResumeData",
+            "type": "object",
+            "properties": {
+                "personal_info": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "title": {"type": "string"},
+                        "contact": {
+                            "type": "object",
+                            "properties": {
+                                "phone": {"type": "string"},
+                                "email": {"type": "string", "format": "email"},
+                                "address": {"type": "string"},
+                                "linkedin": {"type": "string"},
+                                "website": {"type": "string"}
+                            }
+                        }
+                    },
+                    "required": ["name", "title"]
+                },
+                "summary": {"type": "string"},
+                "skills": {
+                    "type": "object",
+                    "properties": {
+                        "core_skills": {"type": "array", "items": {"type": "string"}},
+                        "technical_skills": {"type": "array", "items": {"type": "string"}},
+                        "professional_skills": {"type": "array", "items": {"type": "string"}}
+                    }
+                },
+                "work_experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "position": {"type": "string"},
+                            "company": {"type": "string"},
+                            "location": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"},
+                            "responsibilities": {"type": "array", "items": {"type": "string"}},
+                            "achievements": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["position", "company", "start_date"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree": {"type": "string"},
+                            "school": {"type": "string"},
+                            "location": {"type": "string"},
+                            "graduation_date": {"type": "string"},
+                            "gpa": {"type": "string"}
+                        },
+                        "required": ["degree", "school", "graduation_date"]
+                    }
+                },
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "description": {"type": "string"},
+                            "technologies": {"type": "array", "items": {"type": "string"}},
+                            "dates": {"type": "string"}
+                        },
+                        "required": ["name", "description"]
+                    }
+                }
+            },
+            "required": ["personal_info", "summary", "skills", "work_experience", "education"]
+        }
+    },
+    "russian": {
+        "title": "Russian Resume",
+        "description": "Российский формат резюме (исходный формат)",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "ResumeTemplate2Data",
+            "type": "object",
+            "properties": {
+                "full_name": {"type": "string"},
+                "gender": {"type": "string", "enum": ["мужской", "женский"]},
+                "age": {"type": "integer", "minimum": 14, "maximum": 100},
+                "birth_date": {"type": "string"},
+                "phone": {"type": "string"},
+                "email": {"type": "string", "format": "email"},
+                "location": {"type": "string"},
+                "citizenship": {"type": "string"},
+                "work_permit": {"type": "string"},
+                "relocation_status": {"type": "string"},
+                "travel_readiness": {"type": "string"},
+
+                "desired_position": {"type": "string"},
+                "salary": {"type": "string"},
+                "specializations": {"type": "array", "items": {"type": "string"}},
+                "employment_type": {"type": "string"},
+                "schedules": {"type": "array", "items": {"type": "string"}},
+                "commute_time": {"type": "string"},
+
+                "total_experience": {"type": "string"},
+
+                "experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "period": {"type": "string"},
+                            "company": {"type": "string"},
+                            "location": {"type": "string"},
+                            "industry": {"type": "string"},
+                            "position": {"type": "string"},
+                            "duties": {"type": "array", "items": {"type": "string"}},
+                            "achievements": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["period", "company", "position"]
+                    },
+                    "minItems": 1
+                },
+
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "year": {"type": "string"},
+                            "university": {"type": "string"},
+                            "degree": {"type": "string"},
+                            "faculty": {"type": "string"},
+                            "program": {"type": "string"}
+                        },
+                        "required": ["year", "university", "degree"]
+                    },
+                    "minItems": 1
+                },
+
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "level": {"type": "string"}
+                        },
+                        "required": ["name", "level"]
+                    }
+                },
+
+                "skills": {"type": "array", "items": {"type": "string"}},
+
+                "driving": {"type": "string"},
+
+                "references": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "position": {"type": "string"},
+                            "company": {"type": "string"}
+                        },
+                        "required": ["name", "company"]
+                    }
+                },
+
+                "about": {"type": "string"}
+            },
+            "required": [
+                "full_name",
+                "gender",
+                "age",
+                "birth_date",
+                "phone",
+                "email",
+                "location",
+                "citizenship",
+                "work_permit",
+                "desired_position",
+                "specializations",
+                "employment_type",
+                "schedules",
+                "total_experience",
+                "experience",
+                "education",
+                "skills"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "us": {
+        "title": "US Resume",
+        "description": "Американский формат резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "USResumeData",
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "contact_info": {
+                    "type": "object",
+                    "properties": {
+                        "phone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"},
+                        "address": {"type": "string"},
+                        "linkedin": {"type": "string", "format": "uri"},
+                        "portfolio": {"type": "string", "format": "uri"}
+                    }
+                },
+                "summary": {"type": "string"},
+                "experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "company": {"type": "string"},
+                            "location": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"},
+                            "highlights": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["title", "company", "start_date"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree": {"type": "string"},
+                            "school": {"type": "string"},
+                            "location": {"type": "string"},
+                            "graduation_date": {"type": "string"},
+                            "gpa": {"type": "string"},
+                            "relevant_coursework": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["degree", "school", "graduation_date"]
+                    }
+                },
+                "skills": {"type": "array", "items": {"type": "string"}},
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "technologies": {"type": "array", "items": {"type": "string"}},
+                            "date": {"type": "string"}
+                        },
+                        "required": ["title", "description"]
+                    }
+                },
+                "awards": {"type": "array", "items": {"type": "string"}},
+                "volunteer_work": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"type": "string"},
+                            "organization": {"type": "string"},
+                            "dates": {"type": "string"},
+                            "description": {"type": "string"}
+                        },
+                        "required": ["role", "organization"]
+                    }
+                }
+            },
+            "required": ["name", "contact_info", "summary", "experience", "education", "skills"]
+        }
+    },
+    "uk": {
+        "title": "UK CV",
+        "description": "Британский формат резюме (CV)",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "UKCVData",
+            "type": "object",
+            "properties": {
+                "personal_information": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "address": {"type": "string"},
+                        "phone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"},
+                        "linkedin": {"type": "string", "format": "uri"},
+                        "date_of_birth": {"type": "string"},
+                        "nationality": {"type": "string"},
+                        "place_of_birth": {"type": "string"}
+                    },
+                    "required": ["name", "phone", "email"]
+                },
+                "profile": {"type": "string"},
+                "key_skills": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "work_experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "job_title": {"type": "string"},
+                            "company": {"type": "string"},
+                            "dates": {"type": "string"},
+                            "duration": {"type": "string"},
+                            "responsibilities": {"type": "array", "items": {"type": "string"}},
+                            "achievements": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["job_title", "company", "dates"]
+                    }
+                },
+                "education_and_training": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "qualification": {"type": "string"},
+                            "institution": {"type": "string"},
+                            "dates": {"type": "string"},
+                            "grade": {"type": "string"},
+                            "subjects": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["qualification", "institution", "dates"]
+                    }
+                },
+                "additional_information": {
+                    "type": "object",
+                    "properties": {
+                        "hobbies": {"type": "array", "items": {"type": "string"}},
+                        "interests": {"type": "array", "items": {"type": "string"}},
+                        "references": {"type": "string"}
+                    }
+                }
+            },
+            "required": ["personal_information", "profile", "key_skills", "work_experience", "education_and_training"]
+        }
+    },
+    "german": {
+        "title": "German Lebenslauf",
+        "description": "Немецкий формат резюме (Lebenslauf)",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "GermanLebenslaufData",
+            "type": "object",
+            "properties": {
+                "personal_data": {
+                    "type": "object",
+                    "properties": {
+                        "first_name": {"type": "string"},
+                        "last_name": {"type": "string"},
+                        "street": {"type": "string"},
+                        "postal_code": {"type": "string"},
+                        "city": {"type": "string"},
+                        "country": {"type": "string"},
+                        "phone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"},
+                        "date_of_birth": {"type": "string"},
+                        "place_of_birth": {"type": "string"},
+                        "nationality": {"type": "string"},
+                        "marital_status": {"type": "string"},
+                        "photo_url": {"type": "string", "format": "uri"}
+                    },
+                    "required": ["first_name", "last_name", "street", "city", "phone", "email", "date_of_birth", "place_of_birth"]
+                },
+                "professional_profile": {"type": "string"},
+                "employment_history": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "position": {"type": "string"},
+                            "company": {"type": "string"},
+                            "city": {"type": "string"},
+                            "country": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"},
+                            "description": {"type": "string"}
+                        },
+                        "required": ["position", "company", "start_date"]
+                    }
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string"},
+                            "institution": {"type": "string"},
+                            "location": {"type": "string"},
+                            "start_date": {"type": "string"},
+                            "end_date": {"type": "string"},
+                            "description": {"type": "string"}
+                        },
+                        "required": ["type", "institution", "start_date"]
+                    }
+                },
+                "qualifications": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "language": {"type": "string"},
+                            "level": {"type": "string", "enum": ["Grundkenntnisse", "Fortgeschritten", "Muttersprache", "Fließend"]}
+                        },
+                        "required": ["language", "level"]
+                    }
+                },
+                "interests": {"type": "array", "items": {"type": "string"}},
+                "references": {"type": "string"},
+                "signature_date": {"type": "string", "format": "date"},
+                "signature_place": {"type": "string"}
+            },
+            "required": ["personal_data", "professional_profile", "employment_history", "education"]
+        }
+    },
+    "french": {
+        "title": "French CV",
+        "description": "Французский формат резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "FrenchCVData",
+            "type": "object",
+            "properties": {
+                "coordonnees": {
+                    "type": "object",
+                    "properties": {
+                        "nom": {"type": "string"},
+                        "prenom": {"type": "string"},
+                        "adresse": {"type": "string"},
+                        "code_postal": {"type": "string"},
+                        "ville": {"type": "string"},
+                        "pays": {"type": "string"},
+                        "telephone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"},
+                        "linkedin": {"type": "string", "format": "uri"}
+                    },
+                    "required": ["nom", "prenom", "telephone", "email"]
+                },
+                "profil_professionnel": {"type": "string"},
+                "competences": {
+                    "type": "object",
+                    "properties": {
+                        "techniques": {"type": "array", "items": {"type": "string"}},
+                        "langues": {"type": "array", "items": {"type": "string"}},
+                        "soft_skills": {"type": "array", "items": {"type": "string"}}
+                    }
+                },
+                "experience_professionnelle": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "poste": {"type": "string"},
+                            "entreprise": {"type": "string"},
+                            "ville": {"type": "string"},
+                            "pays": {"type": "string"},
+                            "date_debut": {"type": "string"},
+                            "date_fin": {"type": "string"},
+                            "missions": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["poste", "entreprise", "date_debut"]
+                    }
+                },
+                "formation": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "diplome": {"type": "string"},
+                            "etablissement": {"type": "string"},
+                            "ville": {"type": "string"},
+                            "pays": {"type": "string"},
+                            "date_debut": {"type": "string"},
+                            "date_fin": {"type": "string"}
+                        },
+                        "required": ["diplome", "etablissement", "date_debut"]
+                    }
+                },
+                "interets": {"type": "array", "items": {"type": "string"}},
+                "permis": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["coordonnees", "profil_professionnel", "competences", "experience_professionnelle", "formation"]
+        }
+    },
+    "chinese": {
+        "title": "Chinese Resume",
+        "description": "Китайский формат резюме",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "ChineseResumeData",
+            "type": "object",
+            "properties": {
+                "姓名": {"type": "string"},
+                "性别": {"type": "string", "enum": ["男", "女"]},
+                "出生日期": {"type": "string"},
+                "联系电话": {"type": "string"},
+                "电子邮箱": {"type": "string", "format": "email"},
+                "现居住地": {"type": "string"},
+                "政治面貌": {"type": "string"},
+                "户口所在地": {"type": "string"},
+                
+                "求职意向": {"type": "string"},
+                "期望薪资": {"type": "string"},
+                "工作性质": {"type": "string"},
+                "工作地点": {"type": "string"},
+                
+                "工作经验": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "时间段": {"type": "string"},
+                            "公司名称": {"type": "string"},
+                            "职位名称": {"type": "string"},
+                            "工作描述": {"type": "array", "items": {"type": "string"}}
+                        },
+                        "required": ["时间段", "公司名称", "职位名称"]
+                    }
+                },
+                
+                "教育背景": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "时间段": {"type": "string"},
+                            "学校名称": {"type": "string"},
+                            "学历": {"type": "string"},
+                            "专业": {"type": "string"},
+                            "在校经历": {"type": "string"}
+                        },
+                        "required": ["时间段", "学校名称", "学历", "专业"]
+                    }
+                },
+                
+                "技能特长": {"type": "array", "items": {"type": "string"}},
+                "语言能力": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "语言": {"type": "string"},
+                            "水平": {"type": "string"}
+                        },
+                        "required": ["语言", "水平"]
+                    }
+                },
+                "自我评价": {"type": "string"},
+                "证书奖项": {"type": "array", "items": {"type": "string"}},
+                "兴趣爱好": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["姓名", "联系电话", "电子邮箱", "求职意向", "工作经验", "教育背景", "技能特长"]
+        }
+    },
+    "japanese": {
+        "title": "Japanese Rirekisho",
+        "description": "Японский формат резюме (Rirekisho)",
+        "schema": {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": "JapaneseRirekishoData",
+            "type": "object",
+            "properties": {
+                "personal_info": {
+                    "type": "object",
+                    "properties": {
+                        "name_kanji": {"type": "string"},
+                        "name_kana": {"type": "string"},
+                        "name_roman": {"type": "string"},
+                        "date_of_birth": {"type": "string"},
+                        "gender": {"type": "string", "enum": ["男性", "女性"]},
+                        "address": {"type": "string"},
+                        "phone": {"type": "string"},
+                        "email": {"type": "string", "format": "email"}
+                    },
+                    "required": ["name_kanji", "date_of_birth", "address", "phone", "email"]
+                },
+                "application_purpose": {"type": "string"},
+                "education_history": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "year": {"type": "integer"},
+                            "month": {"type": "integer"},
+                            "school_name": {"type": "string"},
+                            "location": {"type": "string"},
+                            "major": {"type": "string"},
+                            "degree": {"type": "string"}
+                        },
+                        "required": ["year", "month", "school_name", "location"]
+                    }
+                },
+                "work_history": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "year": {"type": "integer"},
+                            "month": {"type": "integer"},
+                            "company_name": {"type": "string"},
+                            "position": {"type": "string"},
+                            "job_description": {"type": "string"}
+                        },
+                        "required": ["year", "month", "company_name", "position"]
+                    }
+                },
+                "skills": {"type": "array", "items": {"type": "string"}},
+                "qualifications": {"type": "array", "items": {"type": "string"}},
+                "self_introduction": {"type": "string"},
+                "hobbies_interests": {"type": "array", "items": {"type": "string"}},
+                "references": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "relationship": {"type": "string"},
+                            "contact": {"type": "string"}
+                        },
+                        "required": ["name", "relationship"]
+                    }
+                }
+            },
+            "required": ["personal_info", "application_purpose", "education_history", "work_history"]
+        }
+    }
+}
+
+def get_template_schema(template_name: str) -> Dict[str, Any]:
+    """
+    Получить схему для конкретного шаблона
+    """
+    if template_name in TEMPLATES:
+        return TEMPLATES[template_name]["schema"]
+    else:
+        # Возвращаем российский формат по умолчанию
+        return TEMPLATES["russian"]["schema"]
+
+def get_available_templates() -> Dict[str, str]:
+    """
+    Получить список доступных шаблонов в формате {ключ: описание}
+    """
+    return {key: template["description"] for key, template in TEMPLATES.items()}
