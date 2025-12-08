@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResumeTemplate2Data",
+  "type": "object",
+  "properties": {
+    "full_name": { "type": "string" },
+    "gender": { "type": "string", "enum": ["мужской", "женский"] },
+    "age": { "type": "integer", "minimum": 14, "maximum": 100 },
+    "birth_date": { "type": "string" },
+    "phone": { "type": "string" },
+    "email": { "type": "string", "format": "email" },
+    "location": { "type": "string" },
+    "citizenship": { "type": "string" },
+    "work_permit": { "type": "string" },
+    "relocation_status": { "type": "string" },
+    "travel_readiness": { "type": "string" },
+
+    "desired_position": { "type": "string" },
+    "salary": { "type": "string" },
+    "specializations": { "type": "array", "items": { "type": "string" } },
+    "employment_type": { "type": "string" },
+    "schedules": { "type": "array", "items": { "type": "string" } },
+    "commute_time": { "type": "string" },
+
+    "total_experience": { "type": "string" },
+
+    "experience": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "period": { "type": "string" },
+          "company": { "type": "string" },
+          "location": { "type": "string" },
+          "industry": { "type": "string" },
+          "position": { "type": "string" },
+          "duties": { "type": "array", "items": { "type": "string" } },
+          "achievements": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["period", "company", "position"]
+      },
+      "minItems": 1
+    },
+
+    "education": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": { "type": "string" },
+          "university": { "type": "string" },
+          "degree": { "type": "string" },
+          "faculty": { "type": "string" },
+          "program": { "type": "string" }
+        },
+        "required": ["year", "university", "degree"]
+      },
+      "minItems": 1
+    },
+
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "level": { "type": "string" }
+        },
+        "required": ["name", "level"]
+      }
+    },
+
+    "skills": { "type": "array", "items": { "type": "string" } },
+
+    "driving": { "type": "string" },
+
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "position": { "type": "string" },
+          "company": { "type": "string" }
+        },
+        "required": ["name", "company"]
+      }
+    },
+
+    "about": { "type": "string" }
+  },
+  "required": [
+    "full_name",
+    "gender",
+    "age",
+    "birth_date",
+    "phone",
+    "email",
+    "location",
+    "citizenship",
+    "work_permit",
+    "desired_position",
+    "specializations",
+    "employment_type",
+    "schedules",
+    "total_experience",
+    "experience",
+    "education",
+    "skills"
+  ],
+  "additionalProperties": false
+}

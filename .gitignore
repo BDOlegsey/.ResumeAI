@@ -21,5 +21,7 @@ staticfiles/
 *.swo
 
 # Env files
-.env
+core/agents/.env
 .env.local
+core/migrations
+.env
