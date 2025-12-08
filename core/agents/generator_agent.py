@@ -25,13 +25,24 @@ def _get_llm():
     return ChatPerplexity(model="sonar-pro", api_key=api_key, temperature=0.2)
 
 def generate_resume_json(user_profile: Dict[str, Any], target: Dict[str, Any],
-                         plan: Dict[str, Any], search_data: Dict[str, Any]) -> Dict[str, Any]:
+                         plan: Dict[str, Any], search_data: Dict[str, Any], 
+                         template_info: Dict[str, Any] = None) -> Dict[str, Any]:
     """
-    Структурный вывод: заставляем LLM вернуть чистый JSON и затем валидируем по schema.json.
+    Структурный вывод: заставляем LLM вернуть чистый JSON и затем валидируем по схеме выбранного шаблона.
     """
     parser = JsonOutputParser()
     format_instructions = parser.get_format_instructions()
-    schema_text = json.dumps(SCHEMA, ensure_ascii=False)
+    
+    # Используем схему из выбранного шаблона, если она предоставлена
+    if template_info and 'template_schema' in template_info:
+        schema_text = json.dumps(template_info['template_schema'], ensure_ascii=False)
+        template_name = template_info.get('template_name', 'russian')
+        template_title = template_info.get('template_title', 'Russian Resume')
+    else:
+        # По умолчанию используем оригинальную схему
+        schema_text = json.dumps(SCHEMA, ensure_ascii=False)
+        template_name = 'russian'
+        template_title = 'Russian Resume'
 
     prompt = (
         f"{SYSTEM_INSTRUCTIONS_GENERATOR}\n\n"

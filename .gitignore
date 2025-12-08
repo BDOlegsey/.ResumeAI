@@ -1,27 +1,44 @@
-# Byte-compiled / optimized / DLL files
+```
+# Compiled and build artifacts
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
+*.o
+*.obj
 
-# Virtual environment
+# Dependencies
+.venv/
 venv/
-env/
-ENV/
+node_modules/
+.mypy_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+target/
 
-# Django
+# Logs and temp files
 *.log
-db.sqlite3
-media/
-staticfiles/
+*.tmp
+*.swp
+*.swo
 
-# IDE
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Env files
-core/agents/.env
-.env.local
-core/migrations
-.env
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# System
+.DS_Store
+Thumbs.db
+```
