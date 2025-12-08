@@ -1,6 +1,14 @@
 """
 Пример использования системы генерации резюме с международными форматами
 """
+import os
+import django
+from django.conf import settings
+
+# Установить модуль настроек Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'resume_agent.settings')
+django.setup()
+
 from core.agents.graph import build_resume_graph
 
 def main():

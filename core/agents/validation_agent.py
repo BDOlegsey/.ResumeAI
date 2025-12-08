@@ -84,3 +84,6 @@ def validate_resume_json(user_profile: Dict[str, Any],
     approved = len(schema_errors) == 0
     logger.debug("Validation agent approved=%s errors=%s", approved, schema_errors)
     return approved, schema_errors
+
+# Create an alias with the expected name for backward compatibility
+validate_resume_with_template = validate_resume_json

@@ -6,7 +6,7 @@ from django.conf import settings
 from langchain_perplexity import ChatPerplexity
 from langchain_core.output_parsers import JsonOutputParser
 from .schemas import SCHEMA
-from system_prompts import SYSTEM_INSTRUCTIONS_GENERATOR
+from .system_prompts import SYSTEM_INSTRUCTIONS_GENERATOR
 
 logger = logging.getLogger('core.agents')
 
@@ -22,7 +22,7 @@ def _resolve_api_key() -> str:
 
 def _get_llm():
     api_key = _resolve_api_key()
-    return ChatPerplexity(model="sonar-pro", api_key=api_key, temperature=0.2)
+    return ChatPerplexity(model="sonar", api_key=api_key, temperature=0.2)
 
 def generate_resume_json(user_profile: Dict[str, Any], target: Dict[str, Any],
                          plan: Dict[str, Any], search_data: Dict[str, Any], 

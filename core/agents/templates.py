@@ -497,7 +497,7 @@ TEMPLATES = {
                 "education",
                 "skills"
             ],
-            "additionalProperties": false
+            "additionalProperties": False
         }
     },
     "us": {

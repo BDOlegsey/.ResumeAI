@@ -6,8 +6,7 @@ from django.conf import settings
 
 from langchain_perplexity import ChatPerplexity
 
-sys.path.append(os.path.abspath('C:\\Users\\Алексей\\OneDrive\\Рабочий стол\\ВУЗ\\ResumeAI\\core\\agents'))
-from system_prompts import SYSTEM_INSTRUCTIONS_SEARCHER
+from .system_prompts import SYSTEM_INSTRUCTIONS_SEARCHER
 
 logger = logging.getLogger('core.agents')
 
@@ -23,7 +22,7 @@ def _resolve_api_key() -> str:
 
 def _get_llm():
     api_key = _resolve_api_key()
-    return ChatPerplexity(model="sonar-pro", api_key=api_key, temperature=0.2)
+    return ChatPerplexity(model="sonar", api_key=api_key, temperature=0.2)
 
 def search_for_target(plan: Dict[str, Any]) -> Dict[str, Any]:
     """
