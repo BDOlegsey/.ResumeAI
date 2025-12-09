@@ -1,450 +1,472 @@
-<!-- [file name]: templates/profile.html -->
 {% extends "base.html" %}
 {% load static %}
 
 {% block title %}Профиль пользователя{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container mt-4">
+    <h1 class="mb-4">Профиль пользователя</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
     <div class="row">
-        <!-- Боковая панель с информацией -->
+        <!-- Левая колонка: общий профиль -->
         <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">👤 Основная информация</h5>
+            <div class="card mb-4">
+                <div class="card-header">
+                    Основная информация
                 </div>
                 <div class="card-body text-center">
                     {% if user_profile.photo %}
-                        <img src="{{ user_profile.photo.url }}" class="rounded-circle mb-3"
-                             alt="Фото профиля" style="width: 150px; height: 150px; object-fit: cover;">
+                        <img src="{{ user_profile.photo.url }}" alt="Фото профиля"
+                             class="img-thumbnail mb-3" style="max-width: 200px;">
                     {% else %}
-                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                             style="width: 150px; height: 150px;">
-                            <span class="text-muted h1">👤</span>
-                        </div>
+                        <div class="mb-3 text-muted">Фото профиля не загружено</div>
                     {% endif %}
 
-                    <h4>{{ user_profile.full_name|default:user.username }}</h4>
-                    <p class="text-muted">{{ user_profile.profession|default:"Профессия не указана" }}</p>
+                    <h5 class="card-title">
+                        {{ user_profile.full_name|default:"Имя не указано" }}
+                    </h5>
+
+                    <p class="card-text mb-1">
+                        {{ user_profile.profession|default:"Профессия не указана" }}
+                    </p>
 
                     {% if user_profile.birth_date %}
-                        <p class="small">🎂 {{ user_profile.birth_date }} ({{ user_profile.age }} лет)</p>
+                        <p class="card-text mb-1">
+                            🎂 {{ user_profile.birth_date }}
+                            {% if user_profile.age %}
+                                ({{ user_profile.age }} лет)
+                            {% endif %}
+                        </p>
                     {% endif %}
 
                     {% if user_profile.gender %}
-                        <p class="small">⚧ {{ user_profile.get_gender_display }}</p>
+                        <p class="card-text mb-1">
+                            ⚧ {{ user_profile.get_gender_display }}
+                        </p>
                     {% endif %}
-                </div>
-            </div>
 
-            <!-- Контакты -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0">📞 Контакты</h6>
-                </div>
-                <div class="card-body">
                     {% if user_profile.phone %}
-                        <p class="small mb-1"><strong>Телефон:</strong> {{ user_profile.phone }}</p>
+                        <p class="card-text mb-1">
+                            📞 {{ user_profile.phone }}
+                        </p>
                     {% endif %}
-                    {% if user_profile.email %}
-                        <p class="small mb-1"><strong>Email:</strong> {{ user_profile.email }}</p>
-                    {% endif %}
-                    {% if user_profile.address %}
-                        <p class="small mb-1"><strong>Адрес:</strong> {{ user_profile.address }}</p>
-                    {% endif %}
-                    {% if user_profile.citizenship %}
-                        <p class="small mb-1"><strong>Гражданство:</strong> {{ user_profile.citizenship }}</p>
-                    {% endif %}
-                </div>
-            </div>
 
-            <!-- Статистика -->
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h6 class="mb-0">📊 Статистика</h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Создано резюме:</span>
-                        <span class="badge bg-primary">{{ total_requests }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Опыт работы:</span>
-                        <span class="badge bg-success">{{ work_experiences|length }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Образование:</span>
-                        <span class="badge bg-info">{{ educations|length }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>Портфолио:</span>
-                        <span class="badge bg-warning">{{ portfolio_items|length }}</span>
-                    </div>
+                    {% if user_profile.email %}
+                        <p class="card-text mb-1">
+                            📧 {{ user_profile.email }}
+                        </p>
+                    {% endif %}
+
+                    {% if user_profile.address %}
+                        <p class="card-text mb-1">
+                            🏠 {{ user_profile.address }}
+                        </p>
+                    {% endif %}
+
+                    {% if user_profile.citizenship %}
+                        <p class="card-text mb-1">
+                            🌍 {{ user_profile.citizenship }}
+                        </p>
+                    {% endif %}
+
+                    <p class="card-text mt-3">
+                        Сгенерированных запросов: {{ total_requests }}
+                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- Основной контент -->
+        <!-- Правая колонка: формы -->
         <div class="col-md-8">
-            <!-- Форма редактирования профиля -->
-            <div class="card shadow-sm mb-4">
+            <!-- Форма профиля -->
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0">⚙️ Редактирование профиля</h5>
+                    Редактировать профиль
                 </div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
+                        {{ profile_form.non_field_errors }}
+
                         <div class="row">
-                            <div class="col-md-6">
-                                <h6>👤 Личная информация</h6>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.photo.label }}</label>
-                                    {{ profile_form.photo }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.first_name.label }}</label>
-                                    {{ profile_form.first_name }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.last_name.label }}</label>
-                                    {{ profile_form.last_name }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.middle_name.label }}</label>
-                                    {{ profile_form.middle_name }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.birth_date.label }}</label>
-                                    {{ profile_form.birth_date }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.gender.label }}</label>
-                                    {{ profile_form.gender }}
-                                </div>
+                            <div class="col-md-6 mb-3">
+                                {{ profile_form.photo.label_tag }}
+                                {{ profile_form.photo }}
+                                {{ profile_form.photo.errors }}
                             </div>
-                            <div class="col-md-6">
-                                <h6>📞 Контактная информация</h6>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.phone.label }}</label>
-                                    {{ profile_form.phone }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.email.label }}</label>
-                                    {{ profile_form.email }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.address.label }}</label>
-                                    {{ profile_form.address }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.citizenship.label }}</label>
-                                    {{ profile_form.citizenship }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.profession.label }}</label>
-                                    {{ profile_form.profession }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ profile_form.default_resume_format.label }}</label>
-                                    {{ profile_form.default_resume_format }}
-                                </div>
+                            <div class="col-md-6 mb-3">
+                                {{ profile_form.default_resume_format.label_tag }}
+                                {{ profile_form.default_resume_format }}
+                                {{ profile_form.default_resume_format.errors }}
                             </div>
                         </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <h6>🛠️ Навыки</h6>
-                                <div class="mb-3">
-                                    {{ profile_form.skills }}
-                                </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ profile_form.last_name.label_tag }}
+                                {{ profile_form.last_name }}
+                                {{ profile_form.last_name.errors }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ profile_form.first_name.label_tag }}
+                                {{ profile_form.first_name }}
+                                {{ profile_form.first_name.errors }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ profile_form.middle_name.label_tag }}
+                                {{ profile_form.middle_name }}
+                                {{ profile_form.middle_name.errors }}
                             </div>
                         </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <h6>📝 Дополнительная информация</h6>
-                                <div class="mb-3">
-                                    {{ profile_form.additional_info }}
-                                </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                {{ profile_form.birth_date.label_tag }}
+                                {{ profile_form.birth_date }}
+                                {{ profile_form.birth_date.errors }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ profile_form.gender.label_tag }}
+                                {{ profile_form.gender }}
+                                {{ profile_form.gender.errors }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ profile_form.phone.label_tag }}
+                                {{ profile_form.phone }}
+                                {{ profile_form.phone.errors }}
                             </div>
                         </div>
-                        <button type="submit" name="profile_submit" class="btn btn-primary mt-3">
-                            💾 Сохранить профиль
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ profile_form.email.label_tag }}
+                                {{ profile_form.email }}
+                                {{ profile_form.email.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ profile_form.address.label_tag }}
+                                {{ profile_form.address }}
+                                {{ profile_form.address.errors }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ profile_form.citizenship.label_tag }}
+                            {{ profile_form.citizenship }}
+                            {{ profile_form.citizenship.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ profile_form.profession.label_tag }}
+                            {{ profile_form.profession }}
+                            {{ profile_form.profession.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ profile_form.skills.label_tag }}
+                            {{ profile_form.skills }}
+                            {{ profile_form.skills.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ profile_form.additional_info.label_tag }}
+                            {{ profile_form.additional_info }}
+                            {{ profile_form.additional_info.errors }}
+                        </div>
+
+                        <button type="submit" name="profile_submit" class="btn btn-primary">
+                            Сохранить профиль
                         </button>
                     </form>
                 </div>
             </div>
 
             <!-- Опыт работы -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">💼 Опыт работы</h5>
-                    <span class="badge bg-primary">{{ work_experiences|length }}</span>
+            <div class="card mb-4">
+                <div class="card-header">
+                    Опыт работы
                 </div>
                 <div class="card-body">
-                    <!-- Форма добавления опыта работы -->
-                    <form method="post" class="mb-4">
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ work_exp_form.company.label }}</label>
-                                    {{ work_exp_form.company }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ work_exp_form.position.label }}</label>
-                                    {{ work_exp_form.position }}
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ work_exp_form.start_date.label }}</label>
-                                    {{ work_exp_form.start_date }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ work_exp_form.end_date.label }}</label>
-                                    {{ work_exp_form.end_date }}
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-check mt-4">
-                                    {{ work_exp_form.currently_working }}
-                                    <label class="form-check-label" for="{{ work_exp_form.currently_working.id_for_label }}">
-                                        Работаю сейчас
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ work_exp_form.description.label }}</label>
-                            {{ work_exp_form.description }}
-                        </div>
-                        <button type="submit" name="work_exp_submit" class="btn btn-success btn-sm mt-2">
-                            ➕ Добавить опыт работы
-                        </button>
-                    </form>
-
-                    <!-- Список опыта работы -->
                     {% if work_experiences %}
-                        <div class="list-group">
+                        <ul class="list-group mb-3">
                             {% for exp in work_experiences %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">{{ exp.position }} в {{ exp.company }}</h6>
-                                        <p class="mb-1">
-                                            {{ exp.start_date|date:"m.Y" }} -
-                                            {% if exp.currently_working %}
-                                                по настоящее время
-                                            {% else %}
-                                                {{ exp.end_date|date:"m.Y" }}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ exp.position }}</strong> — {{ exp.company }}<br>
+                                        <small>
+                                            {{ exp.start_date }}
+                                            {% if exp.end_date %}
+                                                — {{ exp.end_date }}
+                                            {% elif exp.currently_working %}
+                                                — по настоящее время
                                             {% endif %}
-                                        </p>
+                                        </small>
                                         {% if exp.description %}
-                                            <p class="mb-1 small text-muted">{{ exp.description|linebreaksbr }}</p>
+                                            <div class="mt-1 small text-muted">
+                                                {{ exp.description|linebreaksbr }}
+                                            </div>
                                         {% endif %}
                                     </div>
-                                    <div class="btn-group btn-group-sm ms-3">
-                                        <!-- КНОПКА РЕДАКТИРОВАНИЯ -->
-                                        <a href="{% url 'edit_work_experience' exp.id %}" class="btn btn-outline-primary" title="Редактировать">
-                                            ✏️
+                                    <div class="ms-2">
+                                        <a href="{% url 'edit_work_experience' exp.id %}" class="btn btn-sm btn-outline-secondary mb-1">
+                                            Редактировать
                                         </a>
-                                        <!-- КНОПКА УДАЛЕНИЯ -->
                                         <a href="{% url 'delete_work_experience' exp.id %}"
-                                           class="btn btn-outline-danger"
-                                           onclick="return confirm('Удалить этот опыт работы?')"
-                                           title="Удалить">
-                                            🗑️
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Удалить запись об опыте работы?');">
+                                            Удалить
                                         </a>
                                     </div>
-                                </div>
-                            </div>
+                                </li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     {% else %}
-                        <p class="text-muted text-center">Опыт работы не добавлен</p>
+                        <p class="text-muted">Опыт работы не добавлен.</p>
                     {% endif %}
+
+                    <h6 class="mt-3">Добавить опыт работы</h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ work_exp_form.non_field_errors }}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ work_exp_form.company.label_tag }}
+                                {{ work_exp_form.company }}
+                                {{ work_exp_form.company.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ work_exp_form.position.label_tag }}
+                                {{ work_exp_form.position }}
+                                {{ work_exp_form.position.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ work_exp_form.start_date.label_tag }}
+                                {{ work_exp_form.start_date }}
+                                {{ work_exp_form.start_date.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ work_exp_form.end_date.label_tag }}
+                                {{ work_exp_form.end_date }}
+                                {{ work_exp_form.end_date.errors }}
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            {{ work_exp_form.currently_working }}
+                            {{ work_exp_form.currently_working.label_tag }}
+                            {{ work_exp_form.currently_working.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ work_exp_form.description.label_tag }}
+                            {{ work_exp_form.description }}
+                            {{ work_exp_form.description.errors }}
+                        </div>
+
+                        <button type="submit" name="work_exp_submit" class="btn btn-secondary">
+                            Добавить опыт
+                        </button>
+                    </form>
                 </div>
             </div>
 
             <!-- Образование -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">🎓 Образование</h5>
-                    <span class="badge bg-info">{{ educations|length }}</span>
+            <div class="card mb-4">
+                <div class="card-header">
+                    Образование
                 </div>
                 <div class="card-body">
-                    <!-- Форма добавления образования -->
-                    <form method="post" class="mb-4">
-                        {% csrf_token %}
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ education_form.institution.label }}</label>
-                                    {{ education_form.institution }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ education_form.degree.label }}</label>
-                                    {{ education_form.degree }}
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ education_form.start_date.label }}</label>
-                                    {{ education_form.start_date }}
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">{{ education_form.end_date.label }}</label>
-                                    {{ education_form.end_date }}
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="form-check mt-4">
-                                    {{ education_form.currently_studying }}
-                                    <label class="form-check-label" for="{{ education_form.currently_studying.id_for_label }}">
-                                        Учусь сейчас
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ education_form.specialty.label }}</label>
-                            {{ education_form.specialty }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ education_form.description.label }}</label>
-                            {{ education_form.description }}
-                        </div>
-                        <button type="submit" name="education_submit" class="btn btn-success btn-sm mt-2">
-                            ➕ Добавить образование
-                        </button>
-                    </form>
-
-                    <!-- Список образования -->
                     {% if educations %}
-                        <div class="list-group">
+                        <ul class="list-group mb-3">
                             {% for edu in educations %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">{{ edu.institution }}</h6>
-                                        <p class="mb-1">{{ edu.get_degree_display }} - {{ edu.specialty }}</p>
-                                        <p class="mb-1">
-                                            {{ edu.start_date|date:"m.Y" }} -
-                                            {% if edu.currently_studying %}
-                                                по настоящее время
-                                            {% else %}
-                                                {{ edu.end_date|date:"m.Y" }}
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ edu.institution }}</strong><br>
+                                        <small>
+                                            {{ edu.get_degree_display }} — {{ edu.specialty }}
+                                        </small><br>
+                                        <small>
+                                            {{ edu.start_date }}
+                                            {% if edu.end_date %}
+                                                — {{ edu.end_date }}
+                                            {% elif edu.currently_studying %}
+                                                — по настоящее время
                                             {% endif %}
-                                        </p>
+                                        </small>
                                         {% if edu.description %}
-                                            <p class="mb-1 small text-muted">{{ edu.description|linebreaksbr }}</p>
+                                            <div class="mt-1 small text-muted">
+                                                {{ edu.description|linebreaksbr }}
+                                            </div>
                                         {% endif %}
                                     </div>
-                                    <div class="btn-group btn-group-sm ms-3">
-                                        <!-- КНОПКА РЕДАКТИРОВАНИЯ -->
-                                        <a href="{% url 'edit_education' edu.id %}" class="btn btn-outline-primary" title="Редактировать">
-                                            ✏️
+                                    <div class="ms-2">
+                                        <a href="{% url 'edit_education' edu.id %}" class="btn btn-sm btn-outline-secondary mb-1">
+                                            Редактировать
                                         </a>
-                                        <!-- КНОПКА УДАЛЕНИЯ -->
                                         <a href="{% url 'delete_education' edu.id %}"
-                                           class="btn btn-outline-danger"
-                                           onclick="return confirm('Удалить это образование?')"
-                                           title="Удалить">
-                                            🗑️
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Удалить запись об образовании?');">
+                                            Удалить
                                         </a>
                                     </div>
-                                </div>
-                            </div>
+                                </li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     {% else %}
-                        <p class="text-muted text-center">Образование не добавлено</p>
+                        <p class="text-muted">Образование не добавлено.</p>
                     {% endif %}
+
+                    <h6 class="mt-3">Добавить образование</h6>
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ education_form.non_field_errors }}
+
+                        <div class="mb-3">
+                            {{ education_form.institution.label_tag }}
+                            {{ education_form.institution }}
+                            {{ education_form.institution.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ education_form.degree.label_tag }}
+                            {{ education_form.degree }}
+                            {{ education_form.degree.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ education_form.specialty.label_tag }}
+                            {{ education_form.specialty }}
+                            {{ education_form.specialty.errors }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ education_form.start_date.label_tag }}
+                                {{ education_form.start_date }}
+                                {{ education_form.start_date.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ education_form.end_date.label_tag }}
+                                {{ education_form.end_date }}
+                                {{ education_form.end_date.errors }}
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            {{ education_form.currently_studying }}
+                            {{ education_form.currently_studying.label_tag }}
+                            {{ education_form.currently_studying.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ education_form.description.label_tag }}
+                            {{ education_form.description }}
+                            {{ education_form.description.errors }}
+                        </div>
+
+                        <button type="submit" name="education_submit" class="btn btn-secondary">
+                            Добавить образование
+                        </button>
+                    </form>
                 </div>
             </div>
 
             <!-- Портфолио -->
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">📁 Портфолио</h5>
-                    <span class="badge bg-warning">{{ portfolio_items|length }}</span>
+            <div class="card mb-4">
+                <div class="card-header">
+                    Портфолио
                 </div>
                 <div class="card-body">
-                    <!-- Форма добавления в портфолио -->
-                    <form method="post" enctype="multipart/form-data" class="mb-4">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">{{ portfolio_form.title.label }}</label>
-                            {{ portfolio_form.title }}
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">{{ portfolio_form.description.label }}</label>
-                            {{ portfolio_form.description }}
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ portfolio_form.file.label }}</label>
-                                    {{ portfolio_form.file }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">{{ portfolio_form.link.label }}</label>
-                                    {{ portfolio_form.link }}
-                                </div>
-                            </div>
-                        </div>
-                        <button type="submit" name="portfolio_submit" class="btn btn-success btn-sm mt-2">
-                            ➕ Добавить в портфолио
-                        </button>
-                    </form>
-
-                    <!-- Список портфолио -->
                     {% if portfolio_items %}
-                        <div class="row">
+                        <ul class="list-group mb-3">
                             {% for item in portfolio_items %}
-                            <div class="col-md-6 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title">{{ item.title }}</h6>
-                                            <div class="btn-group btn-group-sm">
-                                                <!-- КНОПКА РЕДАКТИРОВАНИЯ -->
-                                                <a href="{% url 'edit_portfolio_item' item.id %}" class="btn btn-outline-primary" title="Редактировать">
-                                                    ✏️
-                                                </a>
-                                                <!-- КНОПКА УДАЛЕНИЯ -->
-                                                <a href="{% url 'delete_portfolio_item' item.id %}"
-                                                   class="btn btn-outline-danger"
-                                                   onclick="return confirm('Удалить этот проект?')"
-                                                   title="Удалить">
-                                                    🗑️
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ item.title }}</strong><br>
+                                        {% if item.link %}
+                                            <a href="{{ item.link }}" target="_blank">
+                                                {{ item.link }}
+                                            </a><br>
+                                        {% endif %}
+                                        {% if item.description %}
+                                            <div class="mt-1 small text-muted">
+                                                {{ item.description|linebreaksbr }}
+                                            </div>
+                                        {% endif %}
+                                        {% if item.file %}
+                                            <div class="mt-1 small">
+                                                Файл:
+                                                <a href="{{ item.file.url }}" target="_blank">
+                                                    {{ item.file.name }}
                                                 </a>
                                             </div>
-                                        </div>
-                                        <p class="card-text small">{{ item.description|linebreaksbr }}</p>
-                                        <div class="d-flex gap-2 mt-auto">
-                                            {% if item.file %}
-                                                <a href="{{ item.file.url }}" class="btn btn-outline-primary btn-sm" target="_blank">
-                                                    📎 Файл
-                                                </a>
-                                            {% endif %}
-                                            {% if item.link %}
-                                                <a href="{{ item.link }}" class="btn btn-outline-success btn-sm" target="_blank">
-                                                    🔗 Ссылка
-                                                </a>
-                                            {% endif %}
-                                        </div>
+                                        {% endif %}
                                     </div>
-                                </div>
-                            </div>
+                                    <div class="ms-2">
+                                        <a href="{% url 'edit_portfolio_item' item.id %}" class="btn btn-sm btn-outline-secondary mb-1">
+                                            Редактировать
+                                        </a>
+                                        <a href="{% url 'delete_portfolio_item' item.id %}"
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Удалить проект из портфолио?');">
+                                            Удалить
+                                        </a>
+                                    </div>
+                                </li>
                             {% endfor %}
-                        </div>
+                        </ul>
                     {% else %}
-                        <p class="text-muted text-center">Портфолио пусто</p>
+                        <p class="text-muted">Проекты в портфолио ещё не добавлены.</p>
                     {% endif %}
+
+                    <h6 class="mt-3">Добавить проект</h6>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ portfolio_form.non_field_errors }}
+
+                        <div class="mb-3">
+                            {{ portfolio_form.title.label_tag }}
+                            {{ portfolio_form.title }}
+                            {{ portfolio_form.title.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ portfolio_form.description.label_tag }}
+                            {{ portfolio_form.description }}
+                            {{ portfolio_form.description.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ portfolio_form.file.label_tag }}
+                            {{ portfolio_form.file }}
+                            {{ portfolio_form.file.errors }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ portfolio_form.link.label_tag }}
+                            {{ portfolio_form.link }}
+                            {{ portfolio_form.link.errors }}
+                        </div>
+
+                        <button type="submit" name="portfolio_submit" class="btn btn-secondary">
+                            Добавить проект
+                        </button>
+                    </form>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

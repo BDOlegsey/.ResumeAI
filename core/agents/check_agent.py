@@ -1,15 +1,47 @@
 # core/agents/check_agent.py
+
+import json
 import logging
+import os
+import re
 from typing import Dict, Any, Tuple, List
 
-from .schemas import validate_json_payload
+from django.conf import settings
+from langchain_perplexity import ChatPerplexity
+from langchain_core.output_parsers import PydanticOutputParser
 
-logger = logging.getLogger('core.agents')
+from .schemas import validate_json_payload, ReviewResultModel, IssueModel
+
+logger = logging.getLogger("resume_ai")
+
+
+def _resolve_api_key() -> str:
+    key = (
+            getattr(settings, "PERPLEXITY_API_KEY", "")
+            or os.getenv("PERPLEXITY_API_KEY")
+            or os.getenv("PPLX_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+    )
+    if not key:
+        msg = (
+            "Не найден API‑ключ Perplexity. "
+            "Установите PPLX_API_KEY/PERPLEXITY_API_KEY/OPENAI_API_KEY "
+            "или задайте settings.PERPLEXITY_API_KEY."
+        )
+        logger.error(msg)
+        raise RuntimeError(msg)
+    return key
+
+
+def _get_llm() -> ChatPerplexity:
+    api_key = _resolve_api_key()
+    return ChatPerplexity(model="sonar", api_key=api_key, temperature=0.0)
+
 
 def _to_skill_set(value) -> set:
     """
-    Преобразует вход (list[str] | str | None) в множество нижнего регистра.
-    Поддерживает варианты: ["C++", "Python"], "C++, Python", "C++ Python".
+    Преобразует вход (list[str] | dict | str | None) в множество нижнего регистра.
+    Поддерживает варианты: ["C++", "Python"], "C++, Python", "C++ Python", [{"name": "Python"}].
     """
     if value is None:
         return set()
@@ -17,20 +49,19 @@ def _to_skill_set(value) -> set:
         items = []
         for v in value:
             if isinstance(v, dict):
-                # иногда модели отдают [{"name": "Python"}]
                 name = v.get("name") or v.get("skill") or ""
                 if name:
                     items.append(str(name))
             else:
                 items.append(str(v))
-        return set(s.strip().lower() for s in items if str(s).strip())
-    # строка
+        return {s.strip().lower() for s in items if str(s).strip()}
+
     s = str(value)
-    # нормализуем разделители: запятые и точки с запятой -> пробел
-    for sep in [',', ';', '|', '/', '\n']:
-        s = s.replace(sep, ' ')
-    parts = [p.strip().lower() for p in s.split(' ') if p.strip()]
+    for sep in [",", ";", "|", "/", "\n"]:
+        s = s.replace(sep, " ")
+    parts = [p.strip().lower() for p in s.split(" ") if p.strip()]
     return set(parts)
+
 
 def _to_bullets(value) -> List[str]:
     if not value:
@@ -39,33 +70,184 @@ def _to_bullets(value) -> List[str]:
         return [str(x).lower() for x in value if str(x).strip()]
     return [str(value).lower()]
 
-def check_resume_json(user_profile: Dict[str, Any],
-                      search_data: Dict[str, Any],
-                      generated: Dict[str, Any]) -> Tuple[bool, List[str]]:
+
+def check_resume_json(
+        user_profile: Dict[str, Any],
+        search_data: Dict[str, Any],
+        generated: Dict[str, Any],
+        request_controls: Dict[str, Any],
+) -> Tuple[bool, List[str], Dict[str, Any]]:
     """
-    Проверка: соответствие схеме + примитивная детекция галлюцинаций по навыкам.
+    Проверяющий LLM‑агент:
+    - валидирует JSON по схеме и простым правилам (в т.ч. навыки);
+    - вызывает LLM для поиска галлюцинаций/абсурда/упоминаний ИИ;
+    - возвращает (approved, errors, regeneration_directives).
     """
-    errors = validate_json_payload(generated)
+    errors: List[str] = []
 
-    # Достаем навыки профиля (в пайплайне это список строк)
-    profile_skills = _to_skill_set(user_profile.get('skills'))
+    # 1) Структурная валидация по jsonschema
+    schema_errors = validate_json_payload(generated or {})
+    errors.extend(schema_errors)
 
-    # Навыки, которые выдал генератор: поддерживаем и skills, и key_skills
-    gen_skills = _to_skill_set(generated.get('skills'))
-    if not gen_skills:
-        gen_skills = _to_skill_set(generated.get('key_skills'))
+    # 2) Примитивная проверка навыков с учётом add_skills
+    profile_skills = _to_skill_set(user_profile.get("skills"))
+    gen_skills = _to_skill_set(
+        generated.get("skills") or generated.get("key_skills")
+    )
 
-    # Буллеты из поиска — допускаем добавление навыков, если они встречаются в поисковом контексте
-    bullets = _to_bullets((search_data or {}).get('findings', {}).get('bullets'))
+    bullets = _to_bullets(
+        (search_data or {}).get("findings", {}).get("bullets")
+    )
+
+    allow_new_skills = bool(request_controls.get("add_skills", False))
 
     if gen_skills:
-        # Если вообще нет пересечения с профилем, проверим подтверждение поиском
-        if profile_skills and not (gen_skills & profile_skills):
-            confirmed = {s for s in gen_skills if any(s in b for b in bullets)}
-            # требуем чтобы хоть часть была подтверждена контекстом
-            if len(confirmed) < max(1, len(gen_skills) // 3):
-                errors.append("skills: возможны галлюцинации — навыки не подтверждены профилем или поиском")
+        confirmed = {s for s in gen_skills if any(s in b for b in bullets)}
+        overlap = gen_skills & profile_skills
 
-    approved = len(errors) == 0
-    logger.debug("Check agent approved=%s errors=%s", approved, errors)
-    return approved, errors
+        if allow_new_skills:
+            if not overlap and not confirmed:
+                errors.append(
+                    "skills: навыки не подтверждены ни профилем, ни описанием вакансии"
+                )
+        else:
+            required_min = max(1, len(gen_skills) // 3)
+            # Смягчили проверку: если навыков мало, строгое пересечение может сбоить
+            if len(gen_skills) > 2 and len(overlap) < required_min and len(confirmed) < required_min:
+                errors.append(
+                    "skills: возможны галлюцинации — навыки не подтверждены профилем или поисковым контекстом"
+                )
+
+    # 2.1) Быстрый поиск явных упоминаний ИИ (ИСПРАВЛЕНО)
+    # Ищем только в текстовых значениях, чтобы не триггериться на email или URL
+    text_content = ""
+
+    def extract_text(obj):
+        nonlocal text_content
+        if isinstance(obj, dict):
+            for v in obj.values():
+                extract_text(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                extract_text(v)
+        elif isinstance(obj, str):
+            text_content += " " + obj.lower()
+
+    extract_text(generated)
+
+    # Более точные маркеры: только целые слова или специфичные фразы
+    # Убрали просто "ai", заменили на регулярки
+    forbidden_patterns = [
+        r"\bchatgpt\b",
+        r"\bgpt-?4\b",
+        r"\bopenai\b",
+        r"\bgenerated by ai\b",
+        r"сгенерировано нейросетью",
+        r"языковая модель",
+        r"как искусственный интеллект"
+    ]
+
+    for pattern in forbidden_patterns:
+        if re.search(pattern, text_content):
+            errors.append(f"Обнаружено упоминание ИИ/чат-бота (pattern: {pattern})")
+            break
+
+    # 3) LLM‑проверка качества текста и соответствия ограничениям
+    safe_profile = {
+        "full_name": user_profile.get("full_name", ""),
+        "profession": user_profile.get("profession", ""),
+        "skills": list(profile_skills),
+        "work_experience_count": len(user_profile.get("work_experience", [])),
+        "education_count": len(user_profile.get("education", [])),
+    }
+
+    findings = (search_data or {}).get("findings", {})
+    controls_brief = {
+        "strict_matching": bool(
+            request_controls.get("strict_matching", True)
+        ),
+        "add_skills": bool(request_controls.get("add_skills", False)),
+        "specific_conditions": (
+                request_controls.get("specific_conditions") or ""
+        ).strip(),
+        "extra_instructions": (
+                request_controls.get("extra_instructions") or ""
+        ).strip(),
+    }
+
+    llm_result: Dict[str, Any] = {}
+    try:
+        llm = _get_llm()
+        system_instructions = (
+            "Ты выступаешь в роли очень мягкого редактора и ревьюера резюме. "
+            "Нужно проверить структурированное резюме (JSON) на:\n"
+            "- любые упоминания того, что текст сгенерирован ИИ.\n"
+            "Верни один JSON‑объект без пояснений.\n"
+            "Отклоняй резюме только в крайнем случае, если текст явно бессмысленный или содержит фразы типа 'As an AI language model'."
+        )
+
+        parser = PydanticOutputParser(pydantic_object=ReviewResultModel)
+        format_instructions = parser.get_format_instructions()
+
+        prompt = (
+            f"{system_instructions}\n\n"
+            "Краткий профиль пользователя:\n"
+            f"{json.dumps(safe_profile, ensure_ascii=False, indent=2)}\n\n"
+            "Поисковый контекст вакансии:\n"
+            f"{json.dumps(findings, ensure_ascii=False, indent=2)}\n\n"
+            "Управляющие флаги и требования пользователя:\n"
+            f"{json.dumps(controls_brief, ensure_ascii=False, indent=2)}\n\n"
+            "Сгенерированное резюме (JSON‑структура):\n"
+            f"{json.dumps(generated, ensure_ascii=False, indent=2)}\n\n"
+            f"{format_instructions}\n"
+            "Верни только JSON‑объект."
+        )
+
+        resp = llm.invoke(prompt)
+        content = str(getattr(resp, "content", resp)).strip()
+
+        try:
+            parsed_model = parser.parse(content)
+            llm_result = parsed_model.model_dump()
+        except Exception:
+            # Fallback: ищем JSON регуляркой
+            m = re.search(r"\{.*\}\s*$", content, re.S)
+            json_text = m.group(0) if m else content
+            parsed = json.loads(json_text)
+            if isinstance(parsed, dict):
+                llm_result = parsed
+
+    except Exception as exc:
+        logger.exception(
+            "Check agent LLM failed, using only rule‑based checks: %s", exc
+        )
+
+    # Объединяем результаты
+    llm_result = llm_result or {}
+    issues_raw = llm_result.get("issues") or []
+    regen_directives = llm_result.get("regeneration_directives") or {}
+
+    for issue in issues_raw:
+        try:
+            issue_obj = IssueModel.model_validate(issue)
+        except Exception:
+            continue
+        msg = issue_obj.message.strip()
+        if msg and issue_obj.severity in {"warn", "error"}:
+            # Фильтруем совсем мелкие придирки, если нужно
+            errors.append(msg)
+
+    approved_flag = bool(llm_result.get("approved", False))
+    # Если rule-based ошибок нет, верим LLM, иначе False
+    approved = approved_flag and not errors
+
+    if errors:
+        logger.warning("Check agent found errors: %r", errors)
+
+    logger.debug(
+        "Check agent result approved=%s, errors_count=%d",
+        approved,
+        len(errors),
+    )
+
+    return approved, errors, regen_directives

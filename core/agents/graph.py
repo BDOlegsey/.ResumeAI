@@ -1,6 +1,7 @@
-import logging
-from typing import Dict, Any, List, TypedDict
+# core/graph.py
 
+import logging
+from typing import Dict, Any
 from langgraph.graph import StateGraph, END
 
 from .main_agent import plan_for_target
@@ -8,74 +9,141 @@ from .search_agent import search_for_target
 from .generator_agent import generate_resume_json
 from .check_agent import check_resume_json
 
-logger = logging.getLogger('core.agents')
+state_logger = logging.getLogger("resume_ai")
 
-MAX_RETRIES = 2
 
-class ResumeState(TypedDict, total=False):
-    user_profile: Dict[str, Any]
-    target: Dict[str, Any]
-    request_controls: Dict[str, Any]
-    plan: Dict[str, Any]
-    search_data: Dict[str, Any]
-    generated: Dict[str, Any]
-    approved: bool
-    errors: List[str]
-    retries: int
+def build_resume_graph(max_regens: int = 1):
+    """
+    Простой ацикличный граф:
+    1) plan -> main_agent
+    2) search -> search_agent
+    3) generate -> generator_agent
+    4) check -> check_agent
+    """
+    workflow = StateGraph(dict)
 
-def _plan_node(state: ResumeState) -> ResumeState:
-    plan = plan_for_target(state["user_profile"], state["target"], state["request_controls"])
-    state["plan"] = plan
-    return state
+    def node_plan(state: Dict[str, Any]) -> Dict[str, Any]:
+        user_profile = state.get("user_profile") or {}
+        target = state.get("target") or {}
+        controls = state.get("request_controls") or {}
 
-def _search_node(state: ResumeState) -> ResumeState:
-    search_data = search_for_target(state["plan"])
-    state["search_data"] = search_data
-    return state
+        state_logger.info(
+            "Graph node plan: user_id=%s company=%s role=%s",
+            user_profile.get("user_id", "n/a"),
+            target.get("company", ""),
+            target.get("role", ""),
+        )
 
-def _generate_node(state: ResumeState) -> ResumeState:
-    generated = generate_resume_json(
-        user_profile=state["user_profile"],
-        target=state["target"],
-        plan=state["plan"],
-        search_data=state["search_data"],
-    )
-    state["generated"] = generated or {}
-    return state
+        plan = plan_for_target(user_profile, target, controls)
+        state["plan"] = plan
+        # Инициализируем retries, если нет
+        state.setdefault("retries", 0)
+        return state
 
-def _check_node(state: ResumeState) -> ResumeState:
-    approved, errors = check_resume_json(
-        user_profile=state["user_profile"],
-        search_data=state["search_data"],
-        generated=state["generated"],
-    )
-    state["approved"] = approved
-    state["errors"] = errors
-    return state
+    def node_search(state: Dict[str, Any]) -> Dict[str, Any]:
+        plan = state.get("plan") or {}
+        strategy = plan.get("search_strategy") or {}
+        need_search = bool(strategy.get("need_search", True))
 
-def _should_retry(state: ResumeState) -> str:
-    if state.get("approved"):
+        state_logger.info("Graph node search: need_search=%s", need_search)
+
+        if not need_search:
+            state["search_data"] = {"findings": {}, "raw": ""}
+            return state
+
+        search_data = search_for_target(plan)
+        state["search_data"] = search_data
+        return state
+
+    def node_generate(state: Dict[str, Any]) -> Dict[str, Any]:
+        user_profile = state.get("user_profile") or {}
+        target = state.get("target") or {}
+        plan = state.get("plan") or {}
+        search_data = state.get("search_data") or {}
+        feedback = state.get("regen_directives") or {}
+
+        state_logger.info(
+            "Graph node generate: company=%s role=%s retry=%s",
+            target.get("company", ""),
+            target.get("role", ""),
+            state.get("retries", 0),
+        )
+
+        generated = generate_resume_json(
+            user_profile=user_profile,
+            target=target,
+            plan=plan,
+            search_data=search_data,
+            feedback_directives=feedback or None,
+        )
+        state["generated"] = generated
+        return state
+
+    def node_check(state: Dict[str, Any]) -> Dict[str, Any]:
+        user_profile = state.get("user_profile") or {}
+        search_data = state.get("search_data") or {}
+        generated = state.get("generated") or {}
+        controls = state.get("request_controls") or {}
+
+        approved, errors, regen = check_resume_json(
+            user_profile=user_profile,
+            search_data=search_data,
+            generated=generated,
+            request_controls=controls,
+        )
+
+        state["approved"] = approved
+        state["errors"] = errors
+        state["regen_directives"] = regen or {}
+
+        # ВАЖНО: не сбрасываем retries здесь, он управляется в _decide_next
+
+        state_logger.info(
+            "Graph node check: approved=%s errors=%d retries=%s",
+            approved,
+            len(errors),
+            state.get("retries", 0),
+        )
+        return state
+
+    workflow.add_node("plan", node_plan)
+    workflow.add_node("search", node_search)
+    workflow.add_node("generate", node_generate)
+    workflow.add_node("check", node_check)
+
+    workflow.set_entry_point("plan")
+    workflow.add_edge("plan", "search")
+    workflow.add_edge("search", "generate")
+    workflow.add_edge("generate", "check")
+
+    def _decide_next(state: Dict[str, Any]) -> str:
+        approved = bool(state.get("approved"))
+        retries = int(state.get("retries", 0))
+
+        if approved:
+            state_logger.info("Graph decision: approved -> END")
+            return "end"
+
+        if retries < max_regens:
+            # Инкрементируем счетчик ТОЛЬКО здесь
+            state["retries"] = retries + 1
+            state_logger.info(
+                "Graph decision: regen (try %s of %s)", state["retries"], max_regens
+            )
+            return "regen"
+
+        state_logger.warning(
+            "Graph decision: max retries reached -> END (retries=%s)", retries
+        )
         return "end"
-    if state.get("retries", 0) < MAX_RETRIES:
-        state["retries"] = state.get("retries", 0) + 1
-        logger.info("Retrying generation (%s/%s) for company=%s",
-                    state["retries"], MAX_RETRIES, state["target"].get("company"))
-        return "generate"
-    return "end"
 
-def build_resume_graph():
-    graph = StateGraph(ResumeState)
-    graph.add_node("plan", _plan_node)
-    graph.add_node("search", _search_node)
-    graph.add_node("generate", _generate_node)
-    graph.add_node("check", _check_node)
+    workflow.add_conditional_edges(
+        "check",
+        _decide_next,
+        {
+            "regen": "generate",
+            "end": END,
+        },
+    )
 
-    graph.set_entry_point("plan")
-    graph.add_edge("plan", "search")
-    graph.add_edge("search", "generate")
-    graph.add_edge("generate", "check")
-    graph.add_conditional_edges("check", _should_retry, {
-        "generate": "generate",
-        "end": END,
-    })
-    return graph.compile()
+    return workflow.compile()

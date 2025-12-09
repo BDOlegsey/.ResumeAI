@@ -68,28 +68,35 @@ MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp']
 
 # Ключ Perplexity читаем из нескольких переменных
+load_dotenv()
 PERPLEXITY_API_KEY = (
-    load_dotenv("PERPLEXITY_API_KEY")
+   os.getenv("PERPLEXITY_API_KEY")
 )
 
 # Шаблон DOCX (как в примере: template.docx в корне)
 DOCX_TEMPLATE_PATH = os.getenv('DOCX_TEMPLATE_PATH', str(BASE_DIR / "template.docx"))
 PROFILE_PHOTO_WIDTH_MM = float(os.getenv('PROFILE_PHOTO_WIDTH_MM', '26'))
 DOCX_INLINE_TMP_DIR = os.getenv('DOCX_INLINE_TMP_DIR', str(Path(MEDIA_ROOT) / "tmp" / "inline_images"))
+MAX_REGEN_ATTEMPTS = int(os.getenv("MAX_REGEN_ATTEMPTS", "1"))
 
 # Logging
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'incremental': False,
     'formatters': {
         'verbose': {'format': '[{asctime}] {levelname} {name}:{lineno} {message}', 'style': '{'},
         'simple': {'format': '{levelname} {name}: {message}', 'style': '{'},
     },
     'handlers': {
         'console': {'class': 'logging.StreamHandler','formatter': 'simple','level': LOG_LEVEL},
-        'file': {'class': 'logging.FileHandler','filename': os.path.join(BASE_DIR, 'resume_ai.log'),
-                 'formatter': 'verbose','level': LOG_LEVEL},
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'resume_ai.log'),
+            'formatter': 'verbose',
+            'level': LOG_LEVEL,
+        },
     },
     'loggers': {
         'core': {'handlers': ['console', 'file'], 'level': LOG_LEVEL, 'propagate': False},
