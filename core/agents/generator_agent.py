@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional
 from django.conf import settings
 
 from langchain_perplexity import ChatPerplexity
-from langchain_core.output_parsers import PydanticOutputParser
+# Удалили PydanticOutputParser
 
 from .schemas import SCHEMA, ResumeModel, validate_json_payload
 
@@ -39,11 +39,8 @@ def _resolve_api_key() -> str:
 
 def _get_llm(response_format: Optional[Dict[str, Any]] = None) -> ChatPerplexity:
     """
-    Создаёт ChatPerplexity и (по возможности) включает нативный structured output
-    через response_format (JSON Schema / Regex).
-
-    Важно: в некоторых версиях langchain_perplexity параметр model_kwargs может
-    называться иначе или не поддерживаться. Здесь сделан safe-fallback.
+    Создаёт ChatPerplexity и включает нативный structured output
+    через response_format (JSON Schema), если он передан.
     """
     api_key = _resolve_api_key()
 
@@ -59,18 +56,18 @@ def _get_llm(response_format: Optional[Dict[str, Any]] = None) -> ChatPerplexity
             model_kwargs=model_kwargs,
         )
     except TypeError:
-        # Fallback на старую сигнатуру (без model_kwargs)
+        # Fallback на случай, если библиотека langchain_perplexity старая
         if response_format is not None:
             logger.warning(
-                "ChatPerplexity не принял model_kwargs/response_format (версия langchain_perplexity?). "
-                "Structured output на уровне API может быть недоступен; останется prompt+parse."
+                "ChatPerplexity не принял model_kwargs/response_format. "
+                "Structured output может не работать."
             )
         return ChatPerplexity(model="sonar", api_key=api_key, temperature=0.2)
 
 
 SYSTEM_INSTRUCTIONS = (
     "Ты помощник по созданию резюме. "
-    "Составь качественное структурированное резюме на основе профиля пользователя и контекста вакансии. "
+    "Составь качественное структурированное резюме на основе профиля пользователя и контекста вакансии. Пиши красиво и объемно."
     "Не выдумывай фактов: нельзя добавлять опыт, компании, даты или навыки, которых нет в профиле пользователя "
     "или явно не подсказаны поисковым контекстом. "
     "Не упоминай, что текст сгенерирован ИИ. "
@@ -127,8 +124,7 @@ def _apply_profile_defaults(
     target: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Дожимает обязательные поля из профиля/таргета и чистит все None -> "".
-    Также гарантирует minItems=1 для experience/education (как в schema.json).
+    Дожимает обязательные поля и чистит None -> "".
     """
     if not isinstance(data, dict):
         data = {}
@@ -163,7 +159,7 @@ def _apply_profile_defaults(
     if "schedules" not in data or data["schedules"] is None:
         data["schedules"] = []
 
-    # Навыки: если LLM не заполнил, берём из профиля
+    # Навыки
     if not data.get("skills"):
         skills = user_profile.get("skills", [])
         if isinstance(skills, str):
@@ -172,7 +168,7 @@ def _apply_profile_defaults(
         else:
             data["skills"] = skills or []
 
-    # minItems=1 в schema.json для experience/education
+    # Гарантируем непустые списки experience/education (minItems=1)
     exp = data.get("experience")
     if not isinstance(exp, list) or len(exp) == 0:
         data["experience"] = [
@@ -199,7 +195,7 @@ def _apply_profile_defaults(
             }
         ]
 
-    # Глобально чистим None -> "" по всему объекту
+    # Глобально чистим None -> ""
     data = _normalize_nones_to_empty_strings(data)
 
     return data
@@ -212,7 +208,7 @@ def generate_resume_json(
     search_data: Dict[str, Any],
     feedback_directives: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    # Нативный structured output Perplexity: JSON Schema
+    # 1. Включаем structured output (JSON Schema)
     response_format = {
         "type": "json_schema",
         "json_schema": {
@@ -220,8 +216,6 @@ def generate_resume_json(
         },
     }
 
-    parser = PydanticOutputParser(pydantic_object=ResumeModel)
-    format_instructions = parser.get_format_instructions()
     schema_text = json.dumps(SCHEMA, ensure_ascii=False)
 
     generator_directives = plan.get("generator_directives", {}) or {}
@@ -246,7 +240,6 @@ def generate_resume_json(
         f"{json.dumps(findings, ensure_ascii=False, indent=2)}\n\n"
         "Директивы оформления и ограничений:\n"
         f"{json.dumps(generator_directives, ensure_ascii=False, indent=2)}\n\n"
-        f"{format_instructions}\n"
         "Верни только JSON."
     )
 
@@ -260,28 +253,32 @@ def generate_resume_json(
 
     resp = llm.invoke(prompt)
     raw_content = str(getattr(resp, "content", resp))
+
+    # Чистим Markdown (``````), если модель все же добавила его
     clean = raw_content.strip()
     clean = re.sub(r'^```(?:json)?\s*|\s*```$', '', clean)
-    # Основной путь: structured output => уже должен быть JSON
+
     try:
-        resume_obj: ResumeModel = parser.parse(clean)
+        # Прямая валидация через Pydantic-модель
+        resume_obj = ResumeModel.model_validate_json(clean)
     except Exception as e:
-        # Fallback (на случай, если structured output недоступен/проигнорирован)
+        # Fallback: пробуем найти JSON внутри текста regex-ом
         try:
             match = re.search(r"\{.*\}", clean, re.S)
             json_text = match.group(0) if match else clean
             resume_obj = ResumeModel.model_validate_json(json_text)
         except Exception as e2:
             logger.error("Failed to obtain valid ResumeModel from LLM output: %s / %s", e, e2)
+            # Логируем сырой ответ для отладки
+            logger.debug("Raw LLM response causing error: %s", raw_content)
             raise
 
     data = resume_obj.model_dump()
     data = _apply_profile_defaults(data, user_profile, target)
 
-    # Доп. проверка на соответствие schema.json (Draft-07)
+    # Финальная валидация по schema.json
     errors = validate_json_payload(data)
     if errors:
-        # Тут можно сделать автоматическую регенерацию, но сейчас просто явно валимся
         logger.error("Generated JSON does not match schema.json: %s", errors)
         raise ValueError("Generated JSON does not match schema.json: " + "; ".join(errors))
 
