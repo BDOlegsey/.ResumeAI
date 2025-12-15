@@ -375,8 +375,8 @@ class ResumeGenerationForm(forms.Form):
         widget=forms.Textarea(
             attrs={
                 "class": "form-control",
-                "rows": 3,
-                "placeholder": "Дополнительная информация/пожелания для включения в резюме",
+                "rows": 6,
+                "placeholder": "Дополнительная информация/пожелания для включения в резюме, включая специфичные условия: например, без релокации, полная удаленка, готовность к командировкам и т.д.",
             }
         ),
         label="Дополнительная информация/пожелания",
@@ -398,21 +398,6 @@ class ResumeGenerationForm(forms.Form):
         required=False,
         initial=False,
         label="Вставить фото в итоговое резюме",
-    )
-
-    specific_conditions = forms.CharField(
-        required=False,
-        widget=forms.Textarea(
-            attrs={
-                "class": "form-control",
-                "rows": 3,
-                "placeholder": (
-                    "Специфичные условия: например, без релокации, "
-                    "полная удаленка, готовность к командировкам..."
-                ),
-            }
-        ),
-        label="Специфичные условия",
     )
 
     selected_images = forms.MultipleChoiceField(

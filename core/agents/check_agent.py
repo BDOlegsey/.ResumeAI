@@ -167,9 +167,7 @@ def check_resume_json(
             request_controls.get("strict_matching", True)
         ),
         "add_skills": bool(request_controls.get("add_skills", False)),
-        "specific_conditions": (
-                request_controls.get("specific_conditions") or ""
-        ).strip(),
+        "specific_conditions": "",  # Поле больше не используется
         "extra_instructions": (
                 request_controls.get("extra_instructions") or ""
         ).strip(),

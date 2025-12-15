@@ -143,8 +143,18 @@ def index(request):
         include_photo = form.cleaned_data.get("include_photo", False)
         strict_matching = form.cleaned_data["strict_matching"]
         add_skills = form.cleaned_data["add_skills"]
-        specific_conditions = form.cleaned_data["specific_conditions"]
         selected_images = form.cleaned_data.get("selected_images") or []
+
+        # Объединяем дополнительные пожелания с специфичными условиями
+        # (в старой версии специфичные условия были отдельным полем, но теперь объединены)
+        # specific_conditions = form.cleaned_data.get("specific_conditions", "")
+        # if specific_conditions and additional_wishes:
+        #     combined_info = f"{additional_wishes}\n\nСпецифичные условия: {specific_conditions}"
+        # elif specific_conditions:
+        #     combined_info = f"Специфичные условия: {specific_conditions}"
+        # else:
+        #     combined_info = additional_wishes
+        # additional_wishes = combined_info
 
         with transaction.atomic():
             resume_request = ResumeRequest.objects.create(
@@ -163,7 +173,7 @@ def index(request):
                 include_photo=include_photo,
                 strict_matching=strict_matching,
                 add_skills=add_skills,
-                specific_conditions=specific_conditions,
+                specific_conditions="",  # Поле больше не используется, но сохраняем для совместимости
                 status=ResumeRequest.Status.PENDING,
             )
 

@@ -109,7 +109,7 @@ def _controls_from_request(rr) -> Dict[str, Any]:
     return {
         "strict_matching": rr.strict_matching,
         "add_skills": rr.add_skills,
-        "specific_conditions": rr.specific_conditions,
+        "specific_conditions": "",  # Поле больше не используется, оставлено для совместимости
         "extra_instructions": rr.extra_instructions,
         "additional_wishes": rr.additional_wishes,
         "include_photo": rr.include_photo,

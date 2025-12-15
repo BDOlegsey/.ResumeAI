@@ -77,12 +77,20 @@ def _build_fallback_plan(
     extra_instructions = (request_controls.get("extra_instructions") or "").strip()
     additional_wishes = (request_controls.get("additional_wishes") or "").strip()
 
+    # Объединяем специфичные условия с дополнительными пожеланиями
+    combined_wishes = additional_wishes
+    if specific_conditions:
+        if combined_wishes:
+            combined_wishes = f"{combined_wishes}\n\nСпецифичные условия: {specific_conditions}"
+        else:
+            combined_wishes = f"Специфичные условия: {specific_conditions}"
+
     generator_directives = {
         "strict_matching": strict,
         "add_skills": add_skills,
-        "specific_conditions": specific_conditions,
+        "specific_conditions": "",  # Поле больше не используется, но сохраняем для совместимости
         "extra_instructions": extra_instructions,
-        "additional_wishes": additional_wishes,
+        "additional_wishes": combined_wishes,  # Используем объединенное поле
         "tone": "профессиональный, лаконичный",
         "language": "ru",
         "forbid_ai_mentions": True,
@@ -132,12 +140,24 @@ def plan_for_target(
         "additional_info": user_profile.get("additional_info", ""),
     }
 
+    # Подготовим контролы для LLM, объединив специфичные условия с дополнительными пожеланиями
+    specific_conditions = (request_controls.get("specific_conditions") or "").strip()
+    additional_wishes = (request_controls.get("additional_wishes") or "").strip()
+
+    # Объединяем специфичные условия с дополнительными пожеланиями
+    combined_wishes = additional_wishes
+    if specific_conditions:
+        if combined_wishes:
+            combined_wishes = f"{combined_wishes}\n\nСпецифичные условия: {specific_conditions}"
+        else:
+            combined_wishes = f"Специфичные условия: {specific_conditions}"
+
     controls_brief = {
         "strict_matching": bool(request_controls.get("strict_matching", True)),
         "add_skills": bool(request_controls.get("add_skills", False)),
-        "specific_conditions": (request_controls.get("specific_conditions") or "").strip(),
+        "specific_conditions": "",  # Поле больше не используется, но сохраняем для совместимости
         "extra_instructions": (request_controls.get("extra_instructions") or "").strip(),
-        "additional_wishes": (request_controls.get("additional_wishes") or "").strip(),
+        "additional_wishes": combined_wishes,  # Используем объединенное поле
     }
 
     system_instructions = (
